@@ -1,14 +1,28 @@
-import './App.css'
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Applyfresh from "./pages/students/applyfresh";
+import HomePage from "./pages/homepage/homepage";
+import Layout from "./components/Layout";
+import Addcenter from "./pages/centers/addcenter";
+import Allcenters from "./pages/centers/allcenters";
+import Allstudents from "./pages/students/allstudents";
 
-function App() {
 
+const App: React.FC = () => {
   return (
-    <>
-      <div className="flex justify-center items-center h-screen bg-gray-100">
-      <h1 className="text-4xl font-bold text-blue-600">Tailwind is working!</h1>
-    </div>
-    </>
-  )
-}
+    <Router>
+      <Layout>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/student-application-foam" element={<Applyfresh/>} />
+          <Route path="/add-center" element={<Addcenter/>} />
+          <Route path="/centers" element={<Allcenters/>} />
+          <Route path="/students" element={<Allstudents/>} />
 
-export default App
+
+        </Routes>
+     </Layout>
+    </Router>
+  );
+};
+
+export default App;
