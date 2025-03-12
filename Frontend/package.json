@@ -11,14 +11,19 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.0.6",
+    "@types/node": "^22.13.9",
+    "file-saver": "^2.0.5",
     "i": "^0.3.7",
+    "jszip": "^3.10.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.1.5",
+    "save-dev": "^0.0.1-security",
     "tailwindcss": "^4.0.6"
   },
   "devDependencies": {
     "@eslint/js": "^9.19.0",
+    "@types/file-saver": "^2.0.7",
     "@types/react": "^19.0.8",
     "@types/react-dom": "^19.0.3",
     "@vitejs/plugin-react-swc": "^3.5.0",

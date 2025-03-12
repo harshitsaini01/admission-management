@@ -1,0 +1,52 @@
+# Root-level ignores
+node_modules/
+package-lock.json
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Frontend-specific ignores
+Frontend/node_modules/
+Frontend/dist/
+Frontend/dist-ssr/
+Frontend/*.local
+Frontend/.env
+Frontend/.env.local
+Frontend/.env.development.local
+Frontend/.env.test.local
+Frontend/.env.production.local
+Frontend/vite.config.ts.timestamp-*
+Frontend/.cache/
+Frontend/coverage/
+Frontend/*.bak
+Frontend/*.tmp
+
+# Backend-specific ignores
+Backend/node_modules/
+Backend/dist/
+Backend/build/
+Backend/.env
+Backend/.env.local
+Backend/.env.development
+Backend/.env.production
+Backend/*.tsbuildinfo
+Backend/uploads/
+Backend/*.bak
+Backend/*.tmp
+
+# Logs (root-level or any subdirectory)
+logs/

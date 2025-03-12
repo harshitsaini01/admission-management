@@ -1,8 +1,11 @@
 import { useState } from "react";
+import { useAuth } from "../../context/AuthContext";
 
 const Applyfresh: React.FC = () => {
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     center: "",
+    centerId: user?.centerId || "",
     admissionSession: "",
     admissionType: "",
     course: "",
@@ -72,6 +75,10 @@ const Applyfresh: React.FC = () => {
     otherMarksheet: null as File | null,
   });
 
+  const [loading, setLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -92,16 +99,14 @@ const Applyfresh: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
+    setSuccessMessage(null);
+    setErrorMessage(null);
 
-    // Create FormData for file uploads
     const formDataToSend = new FormData();
+    Object.entries(formData).forEach(([key, value]) => formDataToSend.append(key, value));
+    
 
-    // Append all form data
-    Object.entries(formData).forEach(([key, value]) => {
-      formDataToSend.append(key, value);
-    });
-
-    // Append all files
     Object.entries(files).forEach(([key, file]) => {
       if (file) {
         formDataToSend.append(key, file);
@@ -109,38 +114,124 @@ const Applyfresh: React.FC = () => {
     });
 
     try {
-      // Send form data to the backend
-      const response = await fetch("YOUR_BACKEND_ENDPOINT", {
-        method: "POST",
-        body: formDataToSend,
-      });
+      const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+    const response = await fetch(`${API_URL}/api/students`, {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${user?.token}` },
+      body: formDataToSend,
+    });
 
       if (response.ok) {
-        console.log("Form submitted successfully!");
-        // Handle success (e.g., show a success message or redirect)
+        setSuccessMessage("Student registered successfully!");
+        // Reset form after successful submission
+        setFormData({
+          center: "",
+          centerId: user?.centerId || "",
+          admissionSession: "",
+          admissionType: "",
+          course: "",
+          fatherName: "",
+          studentName: "",
+          dob: "",
+          mobileNumber: "",
+          apaarAbcId: "",
+          religion: "",
+          websiteName: "",
+          email: "",
+          motherName: "",
+          category: "",
+          addressCodeNumber: "",
+          medicalStatus: "",
+          alternateEmail: "",
+          dataId: "",
+          employmentStatus: "",
+          alternativeMobile: "",
+          specialization: "",
+          gender: "",
+          aadharcard: "",
+          debId: "",
+          maritalStatus: "",
+          employmentType: "",
+          address: "",
+          pincode: "",
+          postOffice: "",
+          district: "",
+          state: "",
+          year: "",
+          highSchoolSubject: "",
+          highSchoolYear: "",
+          highSchoolBoard: "",
+          highSchoolObtainedMarks: "",
+          highSchoolMaximumMarks: "",
+          highSchoolPercentage: "",
+          intermediateSubject: "",
+          intermediateYear: "",
+          intermediateBoard: "",
+          intermediateObtainedMarks: "",
+          intermediateMaximumMarks: "",
+          intermediatePercentage: "",
+          graduationSubject: "",
+          graduationYear: "",
+          graduationBoard: "",
+          graduationObtainedMarks: "",
+          graduationMaximumMarks: "",
+          graduationPercentage: "",
+          otherSubject: "",
+          otherYear: "",
+          otherBoard: "",
+          otherObtainedMarks: "",
+          otherMaximumMarks: "",
+          otherPercentage: "",
+        });
+        setFiles({
+          photo: null,
+          studentSignature: null,
+          addressIdProof: null,
+          otherDocument: null,
+          abcDebScreenshot: null,
+          highSchoolMarksheet: null,
+          intermediateMarksheet: null,
+          graduationMarksheet: null,
+          otherMarksheet: null,
+        });
       } else {
-        console.error("Form submission failed!");
-        // Handle error (e.g., show an error message)
+        const errorData = await response.json();
+        setErrorMessage(errorData.message || "Failed to register student. Please try again.");
       }
     } catch (error) {
       console.error("Error submitting form:", error);
+      setErrorMessage("An error occurred. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 p-1">
-      <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-md w-full">
-        <h1 className="text-2xl font-bold mb-6 text-center">Register Student</h1>
+    <div className="min-h-screen bg-gray-100 p-4">
+      <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-md w-full max-w-7xl mx-auto">
+        <h1 className="text-2xl font-bold mb-6 text-center text-blue-600">Register Student</h1>
+
+        {/* Success and Error Messages */}
+        {successMessage && (
+          <div className="mb-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded">
+            {successMessage}
+          </div>
+        )}
+        {errorMessage && (
+          <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+            {errorMessage}
+          </div>
+        )}
 
         {/* Center Section */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div>
             <label className="block text-sm font-medium text-gray-700">Center*</label>
             <select
               name="center"
               value={formData.center}
               onChange={handleChange}
-              className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
+              className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
               required
             >
               <option value="">Choose</option>
@@ -149,7 +240,6 @@ const Applyfresh: React.FC = () => {
             </select>
           </div>
 
-          {/* Administration Session */}
           <div>
             <label className="block text-sm font-medium text-gray-700">Admission Session*</label>
             <input
@@ -157,20 +247,19 @@ const Applyfresh: React.FC = () => {
               name="admissionSession"
               value={formData.admissionSession}
               onChange={handleChange}
-              className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
+              className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
               placeholder="Jan-2025"
               required
             />
           </div>
 
-          {/* Application Type */}
           <div>
             <label className="block text-sm font-medium text-gray-700">Admission Type*</label>
             <select
               name="admissionType"
               value={formData.admissionType}
               onChange={handleChange}
-              className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
+              className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
               required
             >
               <option value="">Choose</option>
@@ -178,14 +267,16 @@ const Applyfresh: React.FC = () => {
             </select>
           </div>
         </div>
-        <div className="grid grid-cols-3 gap-4 mb-6">
+
+        {/* Course Section */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div>
             <label className="block text-sm font-medium text-gray-700">Course*</label>
             <select
               name="course"
               value={formData.course}
               onChange={handleChange}
-              className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
+              className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
               required
             >
               <option value="">Choose</option>
@@ -201,7 +292,7 @@ const Applyfresh: React.FC = () => {
               name="specialization"
               value={formData.specialization}
               onChange={handleChange}
-              className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
+              className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
               placeholder="Specialization"
               required
             />
@@ -213,7 +304,7 @@ const Applyfresh: React.FC = () => {
               name="year"
               value={formData.year}
               onChange={handleChange}
-              className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
+              className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
               required
             >
               <option value="">Choose</option>
@@ -226,7 +317,8 @@ const Applyfresh: React.FC = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        {/* Student Details Section */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div>
             <label className="block text-sm font-medium text-gray-700">Student Name*</label>
             <input
@@ -234,7 +326,7 @@ const Applyfresh: React.FC = () => {
               name="studentName"
               value={formData.studentName}
               onChange={handleChange}
-              className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
+              className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
               placeholder="STUDENT NAME"
               required
             />
@@ -247,7 +339,7 @@ const Applyfresh: React.FC = () => {
               name="fatherName"
               value={formData.fatherName}
               onChange={handleChange}
-              className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
+              className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
               placeholder="FATHER NAME"
               required
             />
@@ -260,7 +352,7 @@ const Applyfresh: React.FC = () => {
               name="motherName"
               value={formData.motherName}
               onChange={handleChange}
-              className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
+              className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
               placeholder="MOTHER NAME"
               required
             />
@@ -284,7 +376,6 @@ const Applyfresh: React.FC = () => {
             </select>
           </div>
 
-          {/* Date of Birth */}
           <div>
             <label className="block text-sm font-medium text-gray-700">Date of Birth*</label>
             <input
@@ -329,7 +420,6 @@ const Applyfresh: React.FC = () => {
             />
           </div>
 
-          {/* Mobile Number */}
           <div>
             <label className="block text-sm font-medium text-gray-700">Mobile Number*</label>
             <input
@@ -383,7 +473,6 @@ const Applyfresh: React.FC = () => {
             />
           </div>
 
-          {/* Marital Status Dropdown */}
           <div>
             <label className="block text-sm font-medium text-gray-700">Marital Status*</label>
             <select
@@ -419,7 +508,6 @@ const Applyfresh: React.FC = () => {
             </select>
           </div>
 
-          {/* Religion */}
           <div>
             <label className="block text-sm font-medium text-gray-700">Religion*</label>
             <input
@@ -433,7 +521,6 @@ const Applyfresh: React.FC = () => {
             />
           </div>
 
-          {/* Alternate Email */}
           <div>
             <label className="block text-sm font-medium text-gray-700">Alternate Email</label>
             <input
@@ -446,7 +533,6 @@ const Applyfresh: React.FC = () => {
             />
           </div>
 
-          {/* Alternative Mobile */}
           <div>
             <label className="block text-sm font-medium text-gray-700">Alternative Mobile</label>
             <input
@@ -462,8 +548,7 @@ const Applyfresh: React.FC = () => {
 
         {/* Address */}
         <div className="mt-15 mb-6">
-        <h2 className="text-xl font-semibold mb-5">Address</h2>
-
+          <h2 className="text-xl font-semibold mb-5">Address</h2>
           <label className="block text-sm font-medium text-gray-700">Address*</label>
           <input
             type="text"
@@ -632,7 +717,9 @@ const Applyfresh: React.FC = () => {
                 >
                   Choose File
                 </label>
-                <span className="text-sm text-gray-500">No file chosen</span>
+                <span className="text-sm text-gray-500">
+                  {files.highSchoolMarksheet ? files.highSchoolMarksheet.name : "No file chosen"}
+                </span>
               </div>
             </div>
           </div>
@@ -727,7 +814,9 @@ const Applyfresh: React.FC = () => {
                 >
                   Choose File
                 </label>
-                <span className="text-sm text-gray-500">No file chosen</span>
+                <span className="text-sm text-gray-500">
+                  {files.intermediateMarksheet ? files.intermediateMarksheet.name : "No file chosen"}
+                </span>
               </div>
             </div>
           </div>
@@ -745,7 +834,6 @@ const Applyfresh: React.FC = () => {
                 onChange={handleChange}
                 className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
                 placeholder="Subjects"
-                required
               />
             </div>
             <div>
@@ -754,7 +842,6 @@ const Applyfresh: React.FC = () => {
                 value={formData.graduationYear}
                 onChange={handleChange}
                 className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
-                required
               >
                 <option value="">Select Year</option>
                 <option value="2020">2020</option>
@@ -770,7 +857,6 @@ const Applyfresh: React.FC = () => {
                 onChange={handleChange}
                 className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
                 placeholder="BOARD/UNIVERSITY"
-                required
               />
             </div>
             <div>
@@ -781,7 +867,6 @@ const Applyfresh: React.FC = () => {
                 onChange={handleChange}
                 className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
                 placeholder=""
-                required
               />
             </div>
             <div>
@@ -792,7 +877,6 @@ const Applyfresh: React.FC = () => {
                 onChange={handleChange}
                 className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
                 placeholder=""
-                required
               />
             </div>
             <div>
@@ -803,7 +887,6 @@ const Applyfresh: React.FC = () => {
                 onChange={handleChange}
                 className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
                 placeholder="%"
-                required
               />
             </div>
             <div>
@@ -814,7 +897,6 @@ const Applyfresh: React.FC = () => {
                   onChange={handleFileChange}
                   className="hidden"
                   id="graduationMarksheetInput"
-                  required
                 />
                 <label
                   htmlFor="graduationMarksheetInput"
@@ -822,7 +904,9 @@ const Applyfresh: React.FC = () => {
                 >
                   Choose File
                 </label>
-                <span className="text-sm text-gray-500">No file chosen</span>
+                <span className="text-sm text-gray-500">
+                  {files.graduationMarksheet ? files.graduationMarksheet.name : "No file chosen"}
+                </span>
               </div>
             </div>
           </div>
@@ -840,7 +924,6 @@ const Applyfresh: React.FC = () => {
                 onChange={handleChange}
                 className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
                 placeholder="Course"
-                required
               />
             </div>
             <div>
@@ -849,7 +932,6 @@ const Applyfresh: React.FC = () => {
                 value={formData.otherYear}
                 onChange={handleChange}
                 className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
-                required
               >
                 <option value="">Select Year</option>
                 <option value="2020">2020</option>
@@ -865,7 +947,6 @@ const Applyfresh: React.FC = () => {
                 onChange={handleChange}
                 className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
                 placeholder="BOARD/UNIVERSITY"
-                required
               />
             </div>
             <div>
@@ -876,7 +957,6 @@ const Applyfresh: React.FC = () => {
                 onChange={handleChange}
                 className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
                 placeholder=""
-                required
               />
             </div>
             <div>
@@ -887,7 +967,6 @@ const Applyfresh: React.FC = () => {
                 onChange={handleChange}
                 className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
                 placeholder=""
-                required
               />
             </div>
             <div>
@@ -898,7 +977,6 @@ const Applyfresh: React.FC = () => {
                 onChange={handleChange}
                 className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"
                 placeholder="%"
-                required
               />
             </div>
             <div>
@@ -909,7 +987,6 @@ const Applyfresh: React.FC = () => {
                   onChange={handleFileChange}
                   className="hidden"
                   id="otherMarksheetInput"
-                  required
                 />
                 <label
                   htmlFor="otherMarksheetInput"
@@ -917,7 +994,9 @@ const Applyfresh: React.FC = () => {
                 >
                   Choose File
                 </label>
-                <span className="text-sm text-gray-500">No file chosen</span>
+                <span className="text-sm text-gray-500">
+                  {files.otherMarksheet ? files.otherMarksheet.name : "No file chosen"}
+                </span>
               </div>
             </div>
           </div>
@@ -927,7 +1006,6 @@ const Applyfresh: React.FC = () => {
         <div className="mt-6">
           <h2 className="text-xl font-semibold mb-5">Upload Documents</h2>
           <div className="grid grid-cols-4 gap-6 mb-2">
-            {/* Photo */}
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700">Photo*</label>
               <div className="mt-1 flex items-center">
@@ -945,11 +1023,12 @@ const Applyfresh: React.FC = () => {
                 >
                   Choose File
                 </label>
-                <span className="text-sm text-gray-500">No file chosen</span>
+                <span className="text-sm text-gray-500">
+                  {files.photo ? files.photo.name : "No file chosen"}
+                </span>
               </div>
             </div>
 
-            {/* Student Signature */}
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700">Student Signature*</label>
               <div className="mt-1 flex items-center">
@@ -963,15 +1042,16 @@ const Applyfresh: React.FC = () => {
                 />
                 <label
                   htmlFor="signatureInput"
-                  className="mr-2 px-4 py-2 bg-blue500 text-white rounded-md cursor-pointer hover:bg-blue-600"
+                  className="mr-2 px-4 py-2 bg-blue-500 text-white rounded-md cursor-pointer hover:bg-blue-600"
                 >
                   Choose File
                 </label>
-                <span className="text-sm text-gray-500">No file chosen</span>
+                <span className="text-sm text-gray-500">
+                  {files.studentSignature ? files.studentSignature.name : "No file chosen"}
+                </span>
               </div>
             </div>
 
-            {/* Address ID Proof */}
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700">Address ID Proof*</label>
               <div className="mt-1 flex items-center">
@@ -989,11 +1069,12 @@ const Applyfresh: React.FC = () => {
                 >
                   Choose File
                 </label>
-                <span className="text-sm text-gray-500">No file chosen</span>
+                <span className="text-sm text-gray-500">
+                  {files.addressIdProof ? files.addressIdProof.name : "No file chosen"}
+                </span>
               </div>
             </div>
 
-            {/* Other Document */}
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700">Other Document</label>
               <div className="mt-1 flex items-center">
@@ -1010,12 +1091,13 @@ const Applyfresh: React.FC = () => {
                 >
                   Choose File
                 </label>
-                <span className="text-sm text-gray-500">No file chosen</span>
+                <span className="text-sm text-gray-500">
+                  {files.otherDocument ? files.otherDocument.name : "No file chosen"}
+                </span>
               </div>
             </div>
           </div>
 
-          {/* ABC and DEB ID Screenshot */}
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700">ABC and DEB ID Screenshot*</label>
             <div className="mt-1 flex items-center">
@@ -1033,20 +1115,23 @@ const Applyfresh: React.FC = () => {
               >
                 Choose File
               </label>
-              <span className="text-sm text-gray-500">No file chosen</span>
+              <span className="text-sm text-gray-500">
+                {files.abcDebScreenshot ? files.abcDebScreenshot.name : "No file chosen"}
+              </span>
             </div>
           </div>
         </div>
 
         {/* Submit Button */}
-        <div className="flex justify-center mt-18"> {/* Container for centering */}
-        <button
-          type="submit"
-          className="w-1/8 bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600"
-        >
-          Submit
-        </button>
-      </div>
+        <div className="flex justify-center mt-8">
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-1/2 md:w-1/4 bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          >
+            {loading ? "Submitting..." : "Submit"}
+          </button>
+        </div>
       </form>
     </div>
   );
