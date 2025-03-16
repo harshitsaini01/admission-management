@@ -1,15 +1,30 @@
 import express, { Request, Response, RequestHandler } from "express";
 import Center from "../models/Center";
+import mongoose from "mongoose";
 
 const router = express.Router();
 
-const createCenter: RequestHandler = async (req: Request, res: Response): Promise<void> => {
-  if ((req as any).user.role !== "superadmin") {
+const generateUniqueCode = async (): Promise<string> => {
+  const existingCodes = await Center.find().distinct("code");
+  let newCode: string;
+  do {
+    newCode = Math.floor(1000 + Math.random() * 9000).toString();
+  } while (existingCodes.includes(newCode));
+  return newCode;
+};
+
+const createCenter: RequestHandler = async (req, res) => {
+  const user = (req as any).user;
+  console.log("Creating center with user:", user);
+  if (user.role !== "superadmin") {
     res.status(403).json({ message: "Only superadmin can create centers" });
     return;
   }
+
   try {
-    const center = new Center(req.body);
+    const code = await generateUniqueCode();
+    const centerData = { ...req.body, code };
+    const center = new Center(centerData);
     await center.save();
     res.status(201).json({ message: "Center created successfully", center });
   } catch (error: any) {
@@ -18,33 +33,70 @@ const createCenter: RequestHandler = async (req: Request, res: Response): Promis
   }
 };
 
-const getCenters: RequestHandler = async (req: Request, res: Response): Promise<void> => {
-  if ((req as any).user.role !== "superadmin") {
-    res.status(403).json({ message: "Only superadmin can view all centers" });
-    return;
-  }
+const getCenters: RequestHandler = async (req, res) => {
+  const user = (req as any).user;
   try {
-    const centers = await Center.find();
-    if (!centers.length) {
-      res.status(200).json([]); // Return empty array instead of 404
-      return;
+    let centers;
+    if (user.role === "superadmin") {
+      centers = await Center.find();
+    } else {
+      centers = await Center.find({ _id: user.centerId });
     }
-    res.status(200).json(centers);
+    res.status(200).json(centers.length ? centers : []);
   } catch (error: any) {
     console.error("Error fetching centers:", error);
     res.status(500).json({ message: "Failed to fetch centers", error: error.message });
   }
 };
 
-const updateSubCenterAccess: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+const getCenterByCode: RequestHandler = async (req, res) => {
+  const { code } = req.params;
+  try {
+    const center = await Center.findOne({ code });
+    if (!center) {
+      res.status(404).json({ message: "Center not found" });
+      return;
+    }
+    res.status(200).json({ name: center.name });
+  } catch (error: any) {
+    console.error("Error fetching center by code:", error);
+    res.status(500).json({ message: "Failed to fetch center", error: error.message });
+  }
+};
+
+const getCenterById: RequestHandler = async (req, res) => {
+  const { centerId } = req.params;
+  try {
+    if (!mongoose.Types.ObjectId.isValid(centerId)) {
+      res.status(400).json({ message: "Invalid center ID" });
+      return;
+    }
+    const center = await Center.findById(centerId);
+    if (!center) {
+      res.status(404).json({ message: "Center not found" });
+      return;
+    }
+    res.status(200).json({ code: center.code, name: center.name });
+  } catch (error: any) {
+    console.error("Error fetching center by ID:", error);
+    res.status(500).json({ message: "Failed to fetch center", error: error.message });
+  }
+};
+
+const updateSubCenterAccess: RequestHandler = async (req, res) => {
   if ((req as any).user.role !== "superadmin") {
     res.status(403).json({ message: "Only superadmin can update sub-center access" });
     return;
   }
+
   try {
     const { id } = req.params;
     const { subCenterAccess } = req.body;
 
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      res.status(400).json({ message: "Invalid center ID" });
+      return;
+    }
     if (typeof subCenterAccess !== "boolean") {
       res.status(400).json({ message: "subCenterAccess must be a boolean" });
       return;
@@ -68,15 +120,20 @@ const updateSubCenterAccess: RequestHandler = async (req: Request, res: Response
   }
 };
 
-const updateStatus: RequestHandler = async (req: Request, res: Response): Promise<void> => {
+const updateStatus: RequestHandler = async (req, res) => {
   if ((req as any).user.role !== "superadmin") {
     res.status(403).json({ message: "Only superadmin can update status" });
     return;
   }
+
   try {
     const { id } = req.params;
     const { status } = req.body;
 
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      res.status(400).json({ message: "Invalid center ID" });
+      return;
+    }
     if (typeof status !== "boolean") {
       res.status(400).json({ message: "status must be a boolean" });
       return;
@@ -100,10 +157,40 @@ const updateStatus: RequestHandler = async (req: Request, res: Response): Promis
   }
 };
 
-// Assign handlers to routes
+const deleteCenter: RequestHandler = async (req, res) => {
+  if ((req as any).user.role !== "superadmin") {
+    res.status(403).json({ message: "Only superadmin can delete centers" });
+    return;
+  }
+
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      res.status(400).json({ message: "Invalid center ID" });
+      return;
+    }
+
+    const deletedCenter = await Center.findByIdAndDelete(id);
+
+    if (!deletedCenter) {
+      res.status(404).json({ message: "Center not found" });
+      return;
+    }
+
+    res.status(200).json({ message: "Center deleted successfully" });
+  } catch (error: any) {
+    console.error("Error deleting center:", error);
+    res.status(400).json({ message: "Failed to delete center", error: error.message });
+  }
+};
+
 router.post("/", createCenter);
 router.get("/", getCenters);
+router.get("/code/:code", getCenterByCode);
+router.get("/:centerId", getCenterById); // New endpoint for fetching by ID
 router.patch("/:id/subCenterAccess", updateSubCenterAccess);
 router.patch("/:id/status", updateStatus);
+router.delete("/:id", deleteCenter);
 
 export default router;

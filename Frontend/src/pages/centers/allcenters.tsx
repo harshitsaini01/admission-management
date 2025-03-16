@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
+import { FaTrash } from "react-icons/fa";
 
 type CenterData = {
   _id: string;
@@ -11,11 +12,10 @@ type CenterData = {
   contactNumber: string;
   wallet: string;
   status: boolean;
-  university: string;
 };
 
 const Allcenters: React.FC = () => {
-  const { user } = useAuth();
+  const { user, checkAuth } = useAuth();
   const [centers, setCenters] = useState<CenterData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -24,16 +24,20 @@ const Allcenters: React.FC = () => {
 
   useEffect(() => {
     const fetchCenters = async () => {
-      if (!user?.token) {
-        setError("You must be logged in to view centers");
-        setLoading(false);
-        return;
+      if (!user) {
+        await checkAuth();
+        if (!user) {
+          setError("You must be logged in to view centers");
+          setLoading(false);
+          return;
+        }
       }
 
       setLoading(true);
       setError(null);
       try {
         const response = await fetch(`${API_URL}/api/centers`, {
+          credentials: "include",
           headers: {
             "Authorization": `Bearer ${user.token}`,
             "Content-Type": "application/json",
@@ -53,12 +57,13 @@ const Allcenters: React.FC = () => {
       }
     };
     fetchCenters();
-  }, [user]);
+  }, [user, checkAuth]);
 
   const toggleSubCenterAccess = async (id: string, currentStatus: boolean) => {
     try {
       const response = await fetch(`${API_URL}/api/centers/${id}/subCenterAccess`, {
         method: "PATCH",
+        credentials: "include",
         headers: {
           "Authorization": `Bearer ${user?.token}`,
           "Content-Type": "application/json",
@@ -81,6 +86,7 @@ const Allcenters: React.FC = () => {
     try {
       const response = await fetch(`${API_URL}/api/centers/${id}/status`, {
         method: "PATCH",
+        credentials: "include",
         headers: {
           "Authorization": `Bearer ${user?.token}`,
           "Content-Type": "application/json",
@@ -99,62 +105,59 @@ const Allcenters: React.FC = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-100 p-6">
-        <h1 className="text-2xl font-bold mb-6 text-center">Center Management</h1>
-        <div className="text-center">Loading...</div>
-      </div>
-    );
-  }
+  const deleteCenter = async (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this center?")) return;
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-100 p-6">
-        <h1 className="text-2xl font-bold mb-6 text-center">Center Management</h1>
-        <div className="text-center text-red-500">{error}</div>
-      </div>
-    );
-  }
+    try {
+      const response = await fetch(`${API_URL}/api/centers/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+        headers: {
+          "Authorization": `Bearer ${user?.token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+      setCenters(centers.filter((center) => center._id !== id));
+    } catch (err: any) {
+      setError(err.message || "Failed to delete center.");
+      console.error("Error deleting center:", err);
+    }
+  };
 
-  if (centers.length === 0) {
-    return (
-      <div className="min-h-screen bg-gray-100 p-6">
-        <h1 className="text-2xl font-bold mb-6 text-center">Center Management</h1>
-        <div className="bg-white rounded-lg shadow-md p-6 text-center">
-          <p className="text-gray-600">No centers found.</p>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <div className="min-h-screen bg-gray-100 p-6"><h1 className="text-2xl font-bold mb-6 text-center">Center Management</h1><div className="text-center">Loading...</div></div>;
+  if (error) return <div className="min-h-screen bg-gray-100 p-6"><h1 className="text-2xl font-bold mb-6 text-center">Center Management</h1><div className="text-center text-red-500">{error}</div></div>;
+  if (centers.length === 0) return <div className="min-h-screen bg-gray-100 p-6"><h1 className="text-2xl font-bold mb-6 text-center">Center Management</h1><div className="bg-white rounded-lg shadow-md p-6 text-center"><p className="text-gray-600">No centers found.</p></div></div>;
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
       <h1 className="text-2xl font-bold mb-6 text-center">Center Management</h1>
       <div className="bg-white rounded-lg shadow-md overflow-x-auto">
-        <table className="min-w-full">
+        <table className="min-w-[1200px] w-full">
           <thead className="bg-gray-200">
             <tr>
               <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase">Name</th>
               <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase">Email</th>
               <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase">Code</th>
               <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase">Password</th>
-              <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase">University</th>
               <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase">Sub-Center Access</th>
               <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase">Contact Number</th>
               <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase">Wallet</th>
               <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase">Status</th>
+              <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
             {centers.map((center) => (
               <tr key={center._id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 text-sm text-gray-700">{center.name}</td>
-                <td className="px-6 py-4 text-sm text-gray-700">{center.email}</td>
-                <td className="px-6 py-4 text-sm text-gray-700">{center.code}</td>
-                <td className="px-6 py-4 text-sm text-gray-700">{center.password}</td>
-                <td className="px-6 py-4 text-sm text-gray-700">{center.university}</td>
-                <td className="px-6 py-4 text-sm text-gray-700">
+                <td className="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">{center.name}</td>
+                <td className="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">{center.email}</td>
+                <td className="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">{center.code}</td>
+                <td className="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">{center.password}</td>
+                <td className="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">
                   <button
                     onClick={() => toggleSubCenterAccess(center._id, center.subCenterAccess)}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
@@ -168,9 +171,9 @@ const Allcenters: React.FC = () => {
                     />
                   </button>
                 </td>
-                <td className="px-6 py-4 text-sm text-gray-700">{center.contactNumber}</td>
-                <td className="px-6 py-4 text-sm text-gray-700">{center.wallet}</td>
-                <td className="px-6 py-4 text-sm text-gray-700">
+                <td className="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">{center.contactNumber}</td>
+                <td className="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">{center.wallet}</td>
+                <td className="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">
                   <button
                     onClick={() => toggleStatus(center._id, center.status)}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
@@ -182,6 +185,15 @@ const Allcenters: React.FC = () => {
                         center.status ? "translate-x-6" : "translate-x-1"
                       }`}
                     />
+                  </button>
+                </td>
+                <td className="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">
+                  <button
+                    onClick={() => deleteCenter(center._id)}
+                    className="text-red-500 hover:text-red-700"
+                    title="Delete Center"
+                  >
+                    <FaTrash />
                   </button>
                 </td>
               </tr>

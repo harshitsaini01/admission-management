@@ -9,19 +9,27 @@ interface ICenter extends Document {
   contactNumber: string;
   wallet: string;
   password: string;
-  university: string; // New field
 }
 
-const CenterSchema: Schema = new Schema({
-  name: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
-  code: { type: String, required: true, unique: true },
-  subCenterAccess: { type: Boolean, required: true },
-  status: { type: Boolean, required: true },
-  contactNumber: { type: String, required: true },
-  wallet: { type: String, required: true },
-  password: { type: String, required: true },
-  university: { type: String, required: true, enum: ["DU", "IIT", "BHU"] },
-}, { timestamps: true });
+const CenterSchema: Schema = new Schema(
+  {
+    name: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
+    code: {
+      type: String,
+      required: true,
+      unique: true,
+      maxlength: 4,
+      minlength: 4, // Enforce exactly 4 digits
+      match: /^\d{4}$/, // Ensure it's a 4-digit number
+    },
+    subCenterAccess: { type: Boolean, required: true, default: false },
+    status: { type: Boolean, required: true, default: true },
+    contactNumber: { type: String, required: true },
+    wallet: { type: String, required: true },
+    password: { type: String, required: true },
+  },
+  { timestamps: true }
+);
 
 export default mongoose.model<ICenter>("Center", CenterSchema);

@@ -1,11 +1,15 @@
-import React, { useEffect, useState } from 'react';
-import JSZip from 'jszip';
-import { saveAs } from 'file-saver';
+import React, { useEffect, useState } from "react";
+import JSZip from "jszip";
+import { saveAs } from "file-saver";
 import { useAuth } from "../../context/AuthContext";
+import Placeholder from "../../components/Placeholder";
+import EditModal from "../../components/EditModal";
+import { showConfirm } from "../../components/Alert";
 
 type StudentData = {
   _id: string;
-  centerId: string; // Changed from 'center' to 'centerId' to match backend model
+  center: string; // 4-digit code from Applyfresh
+  centerName: string; // Fetched name from Applyfresh
   admissionSession: string;
   admissionType: string;
   course: string;
@@ -14,226 +18,258 @@ type StudentData = {
   dob: string;
   mobileNumber: string;
   apaarAbcId: string;
-  religion: string;
-  websiteName: string;
   email: string;
-  motherName: string;
-  category: string;
-  addressCodeNumber: string;
-  medicalStatus: string;
-  alternateEmail: string;
-  dataId: string;
-  employmentStatus: string;
-  alternativeMobile: string;
-  specialization: string;
-  gender: string;
-  aadharcard: string;
-  debId: string;
-  maritalStatus: string;
-  employmentType: string;
-  address: string;
-  pincode: string;
-  postOffice: string;
-  district: string;
-  state: string;
-  year: string;
-  highSchoolSubject: string;
-  highSchoolYear: string;
-  highSchoolBoard: string;
-  highSchoolObtainedMarks: number;
-  highSchoolMaximumMarks: number;
-  highSchoolPercentage: number;
-  intermediateSubject: string;
-  intermediateYear: string;
-  intermediateBoard: string;
-  intermediateObtainedMarks: number;
-  intermediateMaximumMarks: number;
-  intermediatePercentage: number;
-  graduationSubject: string;
-  graduationYear: string;
-  graduationBoard: string;
-  graduationObtainedMarks: number;
-  graduationMaximumMarks: number;
-  graduationPercentage: number;
-  otherSubject: string;
-  otherYear: string;
-  otherBoard: string;
-  otherObtainedMarks: number;
-  otherMaximumMarks: number;
-  otherPercentage: number;
-  photo: string;
-  studentSignature: string;
-  addressIdProof: string;
-  otherDocument: string;
-  abcDebScreenshot: string;
-  highSchoolMarksheet: string;
-  intermediateMarksheet: string;
-  graduationMarksheet: string;
-  otherMarksheet: string;
-  __v: number;
+  year?: string;
+  debId?: string;
+  applicationNumber?: string;
+  enrollmentNumber?: string;
+  processedOn?: string;
+  studentStatus?: string;
+  applicationStatus?: string;
+  referenceId: string;
+  admDate: string;
+  photo?: string;
+  studentSignature?: string;
+  addressIdProof?: string;
 };
 
 const Allstudents: React.FC = () => {
+  const { user, checkAuth } = useAuth();
   const [students, setStudents] = useState<StudentData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { user } = useAuth();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editField, setEditField] = useState<{ studentId: string; field: keyof StudentData } | null>(null);
+  const [editValue, setEditValue] = useState<string>("");
 
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
   useEffect(() => {
     const fetchStudents = async () => {
-      if (!user?.token) {
-        setError("You must be logged in to view students");
-        setLoading(false);
-        return;
+      if (!user) {
+        await checkAuth();
+        if (!user) {
+          setError("You must be logged in to view students");
+          setLoading(false);
+          return;
+        }
       }
 
       try {
-        const response = await fetch(`${API_URL}/api/students`, {
-          headers: {
-            "Authorization": `Bearer ${user.token}`,
-            "Content-Type": "application/json",
-          },
+        const url = user.role === "admin" 
+          ? `${API_URL}/api/students?center=${user.centerId}` 
+          : `${API_URL}/api/students`;
+        const response = await fetch(url, {
+          credentials: "include",
+          headers: { "Authorization": `Bearer ${user.token}`, "Content-Type": "application/json" },
         });
 
         if (!response.ok) {
           const errorData = await response.json();
-          throw new Error(errorData.message || `Failed to fetch students: ${response.status}`);
+          throw new Error(errorData.message || "Failed to fetch students");
         }
 
         const data: StudentData[] = await response.json();
         setStudents(data);
       } catch (error: any) {
         setError(error.message || "Error fetching students");
-        console.error('Error fetching students:', error);
       } finally {
         setLoading(false);
       }
     };
 
     fetchStudents();
-  }, [user]); // Depend on user to refetch if token/role changes
+  }, [user, checkAuth]);
 
   const downloadDocuments = async (student: StudentData) => {
     const zip = new JSZip();
     const documentFields = [
-      { url: student.photo, name: 'photo' },
-      { url: student.studentSignature, name: 'signature' },
-      { url: student.addressIdProof, name: 'address_id_proof' },
-      { url: student.otherDocument, name: 'other_document' },
-      { url: student.abcDebScreenshot, name: 'abc_deb_screenshot' },
-      { url: student.highSchoolMarksheet, name: 'high_school_marksheet' },
-      { url: student.intermediateMarksheet, name: 'intermediate_marksheet' },
-      { url: student.graduationMarksheet, name: 'graduation_marksheet' },
-      { url: student.otherMarksheet, name: 'other_marksheet' },
-    ].filter(doc => doc.url);
+      { url: student.photo, name: "photo" },
+      { url: student.studentSignature, name: "signature" },
+      { url: student.addressIdProof, name: "address_id_proof" },
+    ].filter((doc) => doc.url);
 
     try {
       await Promise.all(
         documentFields.map(async (doc) => {
-          try {
-            const response = await fetch(doc.url, {
-              headers: {
-                "Authorization": `Bearer ${user?.token}`, // Add token if required by backend
-              },
-            });
-            if (!response.ok) throw new Error(`Failed to fetch ${doc.name}`);
-            const blob = await response.blob();
-            const fileExtension = doc.url.split('.').pop();
-            zip.file(`${doc.name}.${fileExtension}`, blob);
-          } catch (error) {
-            console.error(`Error fetching ${doc.name}:`, error);
-          }
+          const response = await fetch(doc.url || "", {
+            credentials: "include",
+            headers: { "Authorization": `Bearer ${user?.token}` },
+          });
+          if (!response.ok) throw new Error(`Failed to fetch ${doc.name}`);
+          const blob = await response.blob();
+          const fileExtension = doc.url?.split(".").pop();
+          zip.file(`${doc.name}.${fileExtension}`, blob);
         })
       );
-
-      const content = await zip.generateAsync({ type: 'blob' });
+      const content = await zip.generateAsync({ type: "blob" });
       saveAs(content, `${student.studentName}_documents.zip`);
     } catch (error) {
-      console.error('Error downloading documents:', error);
+      console.error("Error downloading documents:", error);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-100 p-4">
-        <h1 className="text-2xl font-bold mb-6 text-center">Students Management</h1>
-        <div className="text-center">Loading...</div>
-      </div>
-    );
-  }
+  const deleteStudent = async (studentId: string) => {
+    if (!showConfirm(`Are you sure you want to delete the student with ID: ${studentId}?`)) return;
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-100 p-4">
-        <h1 className="text-2xl font-bold mb-6 text-center">Students Management</h1>
-        <div className="text-center text-red-500">{error}</div>
-      </div>
-    );
-  }
+    try {
+      const response = await fetch(`${API_URL}/api/students/${studentId}`, {
+        method: "DELETE",
+        credentials: "include",
+        headers: { "Authorization": `Bearer ${user?.token}`, "Content-Type": "application/json" },
+      });
 
-  if (students.length === 0) {
-    return (
-      <div className="min-h-screen bg-gray-100 p-4">
-        <h1 className="text-2xl font-bold mb-6 text-center">Students Management</h1>
-        <div className="bg-white rounded-lg shadow-md p-6 text-center">
-          <p className="text-gray-600">No students found.</p>
-        </div>
-      </div>
-    );
-  }
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to delete student");
+      }
+
+      setStudents(students.filter((student) => student._id !== studentId));
+      window.alert("Student deleted successfully");
+    } catch (error: any) {
+      setError(error.message || "Error deleting student");
+    }
+  };
+
+  const updateStudentField = async () => {
+    if (!editField || !editValue) return;
+
+    try {
+      const response = await fetch(`${API_URL}/api/students/${editField.studentId}`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Authorization": `Bearer ${user?.token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ [editField.field]: editValue }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to update student");
+      }
+
+      const updatedStudent = await response.json();
+      setStudents(students.map((student) => (student._id === editField.studentId ? { ...student, ...updatedStudent } : student)));
+      setIsModalOpen(false);
+      setEditValue("");
+      setEditField(null);
+      window.alert("Field updated successfully");
+    } catch (error: any) {
+      setError(error.message || "Error updating student field");
+    }
+  };
+
+  const openEditModal = (studentId: string, field: keyof StudentData, currentValue?: string) => {
+    setEditField({ studentId, field });
+    setEditValue(currentValue || "");
+    setIsModalOpen(true);
+  };
+
+  if (loading) return <Placeholder type="loading" />;
+  if (error) return <Placeholder type="error" message={error} />;
+  if (students.length === 0) return <Placeholder type="empty" message="No students found." />;
 
   return (
     <div className="min-h-screen bg-gray-100 p-4">
       <h1 className="text-2xl font-bold mb-6 text-center">Students Management</h1>
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+      <div className="bg-white rounded-lg shadow-md overflow-x-auto">
         <table className="min-w-full">
           <thead className="bg-gray-200">
             <tr>
-              <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase">Student Name</th>
+              <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase">Actions</th>
+              <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase">Application Status</th>
+              <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase">Processed On</th>
+              <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase">Reference ID</th>
+              <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase">Application Number</th>
+              <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase">Enrollment Number</th>
+              <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase">Doc Status</th>
+              <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase">Adm Type</th>
+              <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase">Session</th>
+              <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase">Student Status</th>
+              <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase">Name</th>
               <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase">Father Name</th>
               <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase">Course</th>
-              <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase">Mobile Number</th>
+              <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase">Current Year</th>
+              <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase">DOB</th>
+              <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase">Center Code</th>
+              <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase">Center Name</th>
               <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase">Email</th>
-              <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase">Actions</th>
+              <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase">Adm Date</th>
+              <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase">ABC ID</th>
+              <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase">DEB ID</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
             {students.map((student) => (
               <tr key={student._id} className="hover:bg-gray-50">
+                <td className="px-6 py-4 text-sm text-gray-700 flex space-x-2">
+                  <button
+                    onClick={() => downloadDocuments(student)}
+                    className="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                  >
+                    Download Docs
+                  </button>
+                  <button
+                    onClick={() => deleteStudent(student._id)}
+                    className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+                  >
+                    Delete
+                  </button>
+                </td>
+                <td
+                  className="px-6 py-4 text-sm text-gray-700 cursor-pointer"
+                  onClick={() => openEditModal(student._id, "applicationStatus", student.applicationStatus)}
+                >
+                  {student.applicationStatus || "N/A"}
+                </td>
+                <td
+                  className="px-6 py-4 text-sm text-gray-700 cursor-pointer"
+                  onClick={() => openEditModal(student._id, "processedOn", student.processedOn)}
+                >
+                  {student.processedOn || "N/A"}
+                </td>
+                <td className="px-6 py-4 text-sm text-gray-700">{student.referenceId}</td>
+                <td
+                  className="px-6 py-4 text-sm text-gray-700 cursor-pointer"
+                  onClick={() => openEditModal(student._id, "applicationNumber", student.applicationNumber)}
+                >
+                  {student.applicationNumber || "N/A"}
+                </td>
+                <td
+                  className="px-6 py-4 text-sm text-gray-700 cursor-pointer"
+                  onClick={() => openEditModal(student._id, "enrollmentNumber", student.enrollmentNumber)}
+                >
+                  {student.enrollmentNumber || "N/A"}
+                </td>
+                <td className="px-6 py-4 text-sm text-gray-700">
+                  {student.photo && student.studentSignature && student.addressIdProof ? "Complete" : "Incomplete"}
+                </td>
+                <td className="px-6 py-4 text-sm text-gray-700">{student.admissionType || "N/A"}</td>
+                <td className="px-6 py-4 text-sm text-gray-700">{student.admissionSession || "N/A"}</td>
+                <td className="px-6 py-4 text-sm text-gray-700">{student.studentStatus || "N/A"}</td>
                 <td className="px-6 py-4 text-sm text-gray-700">{student.studentName}</td>
                 <td className="px-6 py-4 text-sm text-gray-700">{student.fatherName}</td>
                 <td className="px-6 py-4 text-sm text-gray-700">{student.course}</td>
-                <td className="px-6 py-4 text-sm text-gray-700">{student.mobileNumber}</td>
+                <td className="px-6 py-4 text-sm text-gray-700">{student.year || "N/A"}</td>
+                <td className="px-6 py-4 text-sm text-gray-700">{new Date(student.dob).toLocaleDateString()}</td>
+                <td className="px-6 py-4 text-sm text-gray-700">{student.center || "N/A"}</td>
+                <td className="px-6 py-4 text-sm text-gray-700">{student.centerName || "N/A"}</td>
                 <td className="px-6 py-4 text-sm text-gray-700">{student.email}</td>
-                <td className="px-6 py-4 text-sm text-gray-700">
-                  <button
-                    onClick={() => downloadDocuments(student)}
-                    className="text-blue-500 hover:text-blue-700 flex items-center"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5 mr-1"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                      />
-                    </svg>
-                    Download
-                  </button>
-                </td>
+                <td className="px-6 py-4 text-sm text-gray-700">{new Date(student.admDate).toLocaleDateString()}</td>
+                <td className="px-6 py-4 text-sm text-gray-700">{student.apaarAbcId}</td>
+                <td className="px-6 py-4 text-sm text-gray-700">{student.debId || "N/A"}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      <EditModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSave={updateStudentField}
+        value={editValue}
+        onChange={setEditValue}
+      />
     </div>
   );
 };

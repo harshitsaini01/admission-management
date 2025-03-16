@@ -1,22 +1,41 @@
-import React, { createContext, useState, useContext, ReactNode } from "react";
+import React, { createContext, useState, useContext, ReactNode, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 interface AuthContextType {
-  user: { role: string; token: string; centerId?: string; university?: string } | null;
+  user: { role: string; token?: string; centerId?: string; university?: string } | null;
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
+  checkAuth: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<{ role: string; token: string; centerId?: string; university?: string } | null>(() => {
-    const token = localStorage.getItem("token");
-    // Optionally restore user from localStorage if token exists (requires backend validation)
-    return token ? { role: "", token, centerId: "", university: "" } : null;
-  });
+  const [user, setUser] = useState<{ role: string; token?: string; centerId?: string; university?: string } | null>(null);
   const navigate = useNavigate();
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
+  const checkAuth = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/centers`, {
+        credentials: "include",
+      });
+      if (response.ok) {
+        const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+        setUser({ ...storedUser });
+        console.log("Auth check successful, user:", storedUser); // Debug log
+      } else {
+        console.log("Auth check failed, status:", response.status); // Debug log
+        setUser(null);
+        localStorage.removeItem("user");
+        navigate("/login");
+      }
+    } catch (error) {
+      console.error("Auth check failed:", error);
+      setUser(null);
+      navigate("/login");
+    }
+  };
 
   const login = async (username: string, password: string) => {
     try {
@@ -24,6 +43,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
+        credentials: "include",
       });
 
       if (!response.ok) {
@@ -31,25 +51,39 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         throw new Error(errorData.message || "Invalid credentials");
       }
 
-      const { token, role, centerId, university } = await response.json();
-      const newUser = { role, token, centerId, university };
+      const data = await response.json();
+      const newUser = { role: data.role, centerId: data.centerId, university: data.university };
       setUser(newUser);
-      localStorage.setItem("token", token);
-      navigate(role === "superadmin" ? "/centers" : "/students");
+      localStorage.setItem("user", JSON.stringify(newUser));
+      console.log("Login successful, user:", newUser); // Debug log
+      navigate(data.role === "superadmin" ? "/centers" : "/students");
     } catch (error: any) {
       console.error("Login failed:", error.message);
-      throw error; // Let the caller handle the error (e.g., show a message)
+      throw error;
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await fetch(`${API_URL}/api/logout`, {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
     setUser(null);
-    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
     navigate("/login");
   };
 
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, login, logout, checkAuth }}>
       {children}
     </AuthContext.Provider>
   );
