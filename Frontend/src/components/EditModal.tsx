@@ -1,4 +1,3 @@
-// src/components/EditModal.tsx
 import React from "react";
 
 type EditModalProps = {
@@ -13,26 +12,29 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, onSave, value, o
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center">
-      <div className="bg-white p-6 rounded-lg shadow-lg w-96">
-        <h2 className="text-lg font-semibold mb-4">Edit Field</h2>
+  <div className="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-sm">
+        <div
+        className="bg-white p-6 rounded-xl shadow-2xl w-96 transform transition-all duration-300 scale-100 hover:scale-105"
+        style={{ background: "rgba(255, 255, 255, 0.95)" }} // Slightly translucent white
+      >
+        <h2 className="text-xl font-bold mb-4 text-gray-800 tracking-tight">Edit Field</h2>
         <input
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full p-2 border border-gray-300 rounded-md mb-4"
+          className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-200 bg-gray-50 text-gray-700 placeholder-gray-400"
           placeholder="Enter new value"
         />
-        <div className="flex justify-end space-x-2">
+        <div className="flex justify-end space-x-3 mt-6">
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+            className="px-5 py-2 bg-gray-200 text-gray-600 rounded-lg hover:bg-gray-300 hover:text-gray-800 transition-colors duration-200 font-medium"
           >
             Cancel
           </button>
           <button
             onClick={onSave}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            className="px-5 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg hover:from-blue-600 hover:to-indigo-700 transition-all duration-200 font-medium shadow-md"
           >
             Save
           </button>

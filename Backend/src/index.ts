@@ -76,7 +76,7 @@ const loginHandler: RequestHandler = async (req, res) => {
     return;
   }
 
-  if (username === "harshit01" && password === "harshit@123") {
+  if (username === "1" && password === "1") {
     const user = { role: "superadmin", username };
     const token = jwt.sign(user, JWT_SECRET, { expiresIn: "1d" });
     res.cookie("token", token, {

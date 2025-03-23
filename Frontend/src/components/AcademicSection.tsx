@@ -20,20 +20,22 @@ const AcademicSection: React.FC<AcademicSectionProps> = ({
   required = false,
 }) => {
   // Map title to correct camelCase field names
-  const getFieldName = (title: string) => {
+  const getFieldNameBase = (title: string) => {
     switch (title.toLowerCase()) {
       case "highschool":
-        return "highSchoolMarksheet";
+        return "highSchool";
       case "intermediate":
-        return "intermediateMarksheet";
+        return "intermediate";
       case "graduation":
-        return "graduationMarksheet";
+        return "graduation";
       case "other":
-        return "otherMarksheet";
+        return "other";
       default:
-        return `${title.toLowerCase()}Marksheet`; // Fallback (shouldn’t hit this)
+        return title.toLowerCase(); // Fallback (shouldn’t hit this)
     }
   };
+
+  const baseName = getFieldNameBase(title);
 
   return (
     <div className="grid grid-cols-8 gap-5 mb-4">
@@ -42,16 +44,16 @@ const AcademicSection: React.FC<AcademicSectionProps> = ({
       </div>
       <InputField
         label={required ? "Subject*" : "Subject"}
-        name={`${title.toLowerCase()}Subject`}
-        value={formData[`${title.toLowerCase()}Subject`]}
+        name={`${baseName}Subject`}
+        value={formData[`${baseName}Subject`]}
         onChange={onChange}
         placeholder="Subjects"
         required={required}
       />
       <InputField
         label={required ? "Year*" : "Year"}
-        name={`${title.toLowerCase()}Year`}
-        value={formData[`${title.toLowerCase()}Year`]}
+        name={`${baseName}Year`}
+        value={formData[`${baseName}Year`]}
         onChange={onChange}
         type="select"
         options={[
@@ -64,38 +66,38 @@ const AcademicSection: React.FC<AcademicSectionProps> = ({
       />
       <InputField
         label={required ? "Board/University*" : "Board/University"}
-        name={`${title.toLowerCase()}Board`}
-        value={formData[`${title.toLowerCase()}Board`]}
+        name={`${baseName}Board`}
+        value={formData[`${baseName}Board`]}
         onChange={onChange}
         placeholder="BOARD/UNIVERSITY"
         required={required}
       />
       <InputField
         label={required ? "Obtained Marks*" : "Obtained Marks"}
-        name={`${title.toLowerCase()}ObtainedMarks`}
-        value={formData[`${title.toLowerCase()}ObtainedMarks`]}
+        name={`${baseName}ObtainedMarks`}
+        value={formData[`${baseName}ObtainedMarks`]}
         onChange={onChange}
         required={required}
       />
       <InputField
         label={required ? "Maximum Marks*" : "Maximum Marks"}
-        name={`${title.toLowerCase()}MaximumMarks`}
-        value={formData[`${title.toLowerCase()}MaximumMarks`]}
+        name={`${baseName}MaximumMarks`}
+        value={formData[`${baseName}MaximumMarks`]}
         onChange={onChange}
         required={required}
       />
       <InputField
         label={required ? "Percentage/Grade*" : "Percentage/Grade"}
-        name={`${title.toLowerCase()}Percentage`}
-        value={formData[`${title.toLowerCase()}Percentage`]}
+        name={`${baseName}Percentage`}
+        value={formData[`${baseName}Percentage`]}
         onChange={onChange}
         placeholder="%"
         required={required}
       />
       <FileUpload
         label={required ? "Marksheet*" : "Marksheet"}
-        name={getFieldName(title)} // Use corrected field name
-        file={files[getFieldName(title)]}
+        name={`${baseName}Marksheet`}
+        file={files[`${baseName}Marksheet`]}
         onChange={onFileChange}
         required={required}
       />

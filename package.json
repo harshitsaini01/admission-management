@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@heroicons/react": "^2.2.0",
     "concurrently": "^9.1.2"
   }
 }
