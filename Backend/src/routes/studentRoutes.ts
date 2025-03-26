@@ -1,4 +1,4 @@
-import express, { Request, Response, RequestHandler } from "express";
+import express, { Request, Response, RequestHandler, NextFunction } from "express";
 import multer from "multer";
 import mongoose from "mongoose";
 import Student from "../models/Student";
@@ -35,6 +35,20 @@ const upload = multer({
     cb(new Error("Only images (jpeg, jpg, png) and PDFs are allowed"));
   },
 });
+
+// Middleware to check if user is superadmin
+const isSuperadmin = (req: Request, res: Response, next: NextFunction): void => {
+  const user = (req as any).user;
+  if (!user) {
+    res.status(401).json({ message: "User not authenticated" });
+    return;
+  }
+  if (user.role !== "superadmin") {
+    res.status(403).json({ message: "Only superadmins can perform this action" });
+    return;
+  }
+  next();
+};
 
 const generateReferenceId = async (): Promise<string> => {
   const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -261,7 +275,7 @@ const deleteStudent: RequestHandler = async (req, res) => {
 };
 
 router.get("/", getStudents);
-router.patch("/:id", updateStudent);
+router.patch("/:id", isSuperadmin, updateStudent); // Restrict to superadmin
 router.post(
   "/",
   upload.fields([
@@ -277,6 +291,6 @@ router.post(
   ]),
   createStudent
 );
-router.delete("/:id", deleteStudent);
+router.delete("/:id", isSuperadmin, deleteStudent); // Restrict to superadmin
 
 export default router;

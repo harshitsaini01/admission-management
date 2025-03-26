@@ -7,7 +7,7 @@ interface ICenter extends Document {
   subCenterAccess: boolean;
   status: boolean;
   contactNumber: string;
-  wallet: string;
+  walletBalance: number; // Changed from wallet (String) to walletBalance (Number)
   password: string;
 }
 
@@ -20,13 +20,13 @@ const CenterSchema: Schema = new Schema(
       required: true,
       unique: true,
       maxlength: 4,
-      minlength: 4, // Enforce exactly 4 digits
-      match: /^\d{4}$/, // Ensure it's a 4-digit number
+      minlength: 4,
+      match: /^\d{4}$/,
     },
     subCenterAccess: { type: Boolean, required: true, default: false },
     status: { type: Boolean, required: true, default: true },
     contactNumber: { type: String, required: true },
-    wallet: { type: String, required: true },
+    walletBalance: { type: Number, required: true, default: 0 }, // Changed to Number
     password: { type: String, required: true },
   },
   { timestamps: true }

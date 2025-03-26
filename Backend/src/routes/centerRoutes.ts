@@ -1,21 +1,12 @@
-import express, { Request, Response, RequestHandler } from "express";
+import express from "express";
 import Center from "../models/Center";
 import mongoose from "mongoose";
+import { generateUniqueCode } from "../utils/generateUniqueCode";
 
 const router = express.Router();
 
-const generateUniqueCode = async (): Promise<string> => {
-  const existingCodes = await Center.find().distinct("code");
-  let newCode: string;
-  do {
-    newCode = Math.floor(1000 + Math.random() * 9000).toString();
-  } while (existingCodes.includes(newCode));
-  return newCode;
-};
-
-const createCenter: RequestHandler = async (req, res) => {
+const createCenter = async (req: express.Request, res: express.Response) => {
   const user = (req as any).user;
-  console.log("Creating center with user:", user);
   if (user.role !== "superadmin") {
     res.status(403).json({ message: "Only superadmin can create centers" });
     return;
@@ -33,7 +24,7 @@ const createCenter: RequestHandler = async (req, res) => {
   }
 };
 
-const getCenters: RequestHandler = async (req, res) => {
+const getCenters = async (req: express.Request, res: express.Response) => {
   const user = (req as any).user;
   try {
     let centers;
@@ -49,7 +40,7 @@ const getCenters: RequestHandler = async (req, res) => {
   }
 };
 
-const getCenterByCode: RequestHandler = async (req, res) => {
+const getCenterByCode = async (req: express.Request, res: express.Response) => {
   const { code } = req.params;
   try {
     const center = await Center.findOne({ code });
@@ -64,7 +55,7 @@ const getCenterByCode: RequestHandler = async (req, res) => {
   }
 };
 
-const getCenterById: RequestHandler = async (req, res) => {
+const getCenterById = async (req: express.Request, res: express.Response) => {
   const { centerId } = req.params;
   try {
     if (!mongoose.Types.ObjectId.isValid(centerId)) {
@@ -83,7 +74,7 @@ const getCenterById: RequestHandler = async (req, res) => {
   }
 };
 
-const updateSubCenterAccess: RequestHandler = async (req, res) => {
+const updateSubCenterAccess = async (req: express.Request, res: express.Response) => {
   if ((req as any).user.role !== "superadmin") {
     res.status(403).json({ message: "Only superadmin can update sub-center access" });
     return;
@@ -120,7 +111,7 @@ const updateSubCenterAccess: RequestHandler = async (req, res) => {
   }
 };
 
-const updateStatus: RequestHandler = async (req, res) => {
+const updateStatus = async (req: express.Request, res: express.Response) => {
   if ((req as any).user.role !== "superadmin") {
     res.status(403).json({ message: "Only superadmin can update status" });
     return;
@@ -157,7 +148,7 @@ const updateStatus: RequestHandler = async (req, res) => {
   }
 };
 
-const deleteCenter: RequestHandler = async (req, res) => {
+const deleteCenter = async (req: express.Request, res: express.Response) => {
   if ((req as any).user.role !== "superadmin") {
     res.status(403).json({ message: "Only superadmin can delete centers" });
     return;
@@ -188,7 +179,7 @@ const deleteCenter: RequestHandler = async (req, res) => {
 router.post("/", createCenter);
 router.get("/", getCenters);
 router.get("/code/:code", getCenterByCode);
-router.get("/:centerId", getCenterById); // New endpoint for fetching by ID
+router.get("/:centerId", getCenterById);
 router.patch("/:id/subCenterAccess", updateSubCenterAccess);
 router.patch("/:id/status", updateStatus);
 router.delete("/:id", deleteCenter);

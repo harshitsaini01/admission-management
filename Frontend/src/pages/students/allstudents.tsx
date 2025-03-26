@@ -61,7 +61,7 @@ const Allstudents: React.FC = () => {
           : `${API_URL}/api/students`;
         const response = await fetch(url, {
           credentials: "include",
-          headers: { "Authorization": `Bearer ${user.token}`, "Content-Type": "application/json" },
+          headers: { "Authorization": `Bearer ${user?.token}`, "Content-Type": "application/json" },
         });
 
         if (!response.ok) {
@@ -159,6 +159,10 @@ const Allstudents: React.FC = () => {
   };
 
   const openEditModal = (studentId: string, field: keyof StudentData, currentValue?: string) => {
+    if (user?.role !== "superadmin") {
+      window.alert("Only superadmins can edit this field");
+      return;
+    }
     setEditField({ studentId, field });
     setEditValue(currentValue || "");
     setIsModalOpen(true);
@@ -216,27 +220,27 @@ const Allstudents: React.FC = () => {
                   </button>
                 </td>
                 <td
-                  className="px-6 py-4 text-sm text-gray-700 cursor-pointer"
-                  onClick={() => openEditModal(student._id, "applicationStatus", student.applicationStatus)}
+                  className={`px-6 py-4 text-sm text-gray-700 ${user?.role === "superadmin" ? "cursor-pointer" : ""}`}
+                  onClick={() => user?.role === "superadmin" && openEditModal(student._id, "applicationStatus", student.applicationStatus)}
                 >
                   {student.applicationStatus || "N/A"}
                 </td>
                 <td
-                  className="px-6 py-4 text-sm text-gray-700 cursor-pointer"
-                  onClick={() => openEditModal(student._id, "processedOn", student.processedOn)}
+                  className={`px-6 py-4 text-sm text-gray-700 ${user?.role === "superadmin" ? "cursor-pointer" : ""}`}
+                  onClick={() => user?.role === "superadmin" && openEditModal(student._id, "processedOn", student.processedOn)}
                 >
                   {student.processedOn || "N/A"}
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-700">{student.referenceId}</td>
                 <td
-                  className="px-6 py-4 text-sm text-gray-700 cursor-pointer"
-                  onClick={() => openEditModal(student._id, "applicationNumber", student.applicationNumber)}
+                  className={`px-6 py-4 text-sm text-gray-700 ${user?.role === "superadmin" ? "cursor-pointer" : ""}`}
+                  onClick={() => user?.role === "superadmin" && openEditModal(student._id, "applicationNumber", student.applicationNumber)}
                 >
                   {student.applicationNumber || "N/A"}
                 </td>
                 <td
-                  className="px-6 py-4 text-sm text-gray-700 cursor-pointer"
-                  onClick={() => openEditModal(student._id, "enrollmentNumber", student.enrollmentNumber)}
+                  className={`px-6 py-4 text-sm text-gray-700 ${user?.role === "superadmin" ? "cursor-pointer" : ""}`}
+                  onClick={() => user?.role === "superadmin" && openEditModal(student._id, "enrollmentNumber", student.enrollmentNumber)}
                 >
                   {student.enrollmentNumber || "N/A"}
                 </td>

@@ -1,34 +1,27 @@
-import express, { Request, Response, NextFunction, RequestHandler } from "express";
+import express, { Request, Response, NextFunction } from "express";
 import mongoose from "mongoose";
-import dotenv from "dotenv";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import centerRoutes from "./routes/centerRoutes";
-import studentRoutes from "./routes/studentRoutes";
+import centerRoutes from "./src/routes/centerRoutes";
+import studentRoutes from "./src/routes/studentRoutes";
+import walletRoutes from "./src/routes/walletRoutes";
+import authenticateToken from "./src/middleware/auth";
+import errorHandler from "./src/middleware/errorHandler";
 import jwt from "jsonwebtoken";
 import path from "path";
+import config from "./src/config";
+import fs from "fs"; // Add fs for file existence check
 
-dotenv.config();
-
-const PORT = process.env.PORT || 5000;
-const MONGO_URI = process.env.MONGO_URI;
-const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
-const NODE_ENV = process.env.NODE_ENV || "development";
+const PORT = config.PORT;
+const MONGO_URI = config.MONGO_URI!;
+const JWT_SECRET = config.JWT_SECRET;
+const NODE_ENV = config.NODE_ENV;
 
 const app = express();
 
-if (!MONGO_URI) {
-  console.error("❌ MongoDB URI is missing in .env file!");
-  process.exit(1);
-}
-
-if (!JWT_SECRET || JWT_SECRET === "your-secret-key") {
-  console.warn("⚠️ JWT_SECRET is not set or is using default value. Please set a secure key in .env!");
-}
-
 app.use(
   cors({
-    origin: "http://localhost:5173", // Hardcode for dev
+    origin: "http://localhost:5173",
     credentials: true,
     methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -37,11 +30,24 @@ app.use(
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+
+// Log requests to /uploads and check if the file exists
+app.use("/uploads", (req: Request, res: Response, next: NextFunction) => {
+  const filePath = path.join(__dirname, "./uploads", req.path);
+  console.log(`Request for file: ${req.path}`);
+  console.log(`Looking for file at: ${filePath}`);
+  if (fs.existsSync(filePath)) {
+    console.log("File exists on server.");
+  } else {
+    console.log("File does not exist on server.");
+  }
+  next();
+});
+app.use("/uploads", express.static(path.join(__dirname, "./uploads")));
 
 const connectDB = async () => {
   try {
-    await mongoose.connect(MONGO_URI!);
+    await mongoose.connect(MONGO_URI);
     console.log("✅ MongoDB Connected Successfully!");
   } catch (err) {
     console.error("❌ MongoDB Connection Error:", err);
@@ -50,25 +56,8 @@ const connectDB = async () => {
 };
 connectDB();
 
-const authenticateToken: RequestHandler = (req, res, next) => {
-  const token = req.cookies.token;
-  console.log("Received cookies:", req.cookies); // Debug log
-  if (!token) {
-    res.status(401).json({ message: "No token provided" });
-    return;
-  }
-
-  jwt.verify(token, JWT_SECRET, (err: any, user: any) => {
-    if (err) {
-      res.status(403).json({ message: "Invalid token" });
-      return;
-    }
-    (req as any).user = user;
-    next();
-  });
-};
-
-const loginHandler: RequestHandler = async (req, res) => {
+// Login handler
+const loginHandler = async (req: Request, res: Response) => {
   const { username, password } = req.body;
 
   if (!username || !password) {
@@ -81,13 +70,13 @@ const loginHandler: RequestHandler = async (req, res) => {
     const token = jwt.sign(user, JWT_SECRET, { expiresIn: "1d" });
     res.cookie("token", token, {
       httpOnly: true,
-      secure: false, // Force false for dev
-      sameSite: "lax", // Lax for dev
+      secure: false,
+      sameSite: "lax",
       maxAge: 24 * 60 * 60 * 1000,
       path: "/",
     });
-    console.log("Cookie set for superadmin:", { token }); // Debug log
-    res.status(200).json({ role: "superadmin", message: "Login successful" });
+    console.log("Cookie set for superadmin:", { token });
+    res.status(200).json({ role: "superadmin", username, message: "Login successful" });
     return;
   }
 
@@ -103,7 +92,7 @@ const loginHandler: RequestHandler = async (req, res) => {
         maxAge: 24 * 60 * 60 * 1000,
         path: "/",
       });
-      console.log("Cookie set for admin:", { token }); // Debug log
+      console.log("Cookie set for admin:", { token });
       res.status(200).json({ role: "admin", centerId: center._id.toString(), message: "Login successful" });
       return;
     }
@@ -115,24 +104,34 @@ const loginHandler: RequestHandler = async (req, res) => {
   }
 };
 
-const logoutHandler: RequestHandler = (req, res) => {
+// Check auth handler
+const checkAuthHandler = async (req: Request, res: Response) => {
+  const user = (req as any).user;
+  if (!user) {
+    res.status(401).json({ message: "Not authenticated" });
+    return;
+  }
+  res.status(200).json({ role: user.role, username: user.username, centerId: user.centerId });
+};
+
+// Logout handler
+const logoutHandler = (req: Request, res: Response) => {
   res.clearCookie("token");
   res.json({ message: "Logged out successfully" });
 };
 
 app.post("/api/login", loginHandler);
+app.get("/api/check-auth", authenticateToken, checkAuthHandler);
 app.post("/api/logout", logoutHandler);
 app.use("/api/centers", authenticateToken, centerRoutes);
 app.use("/api/students", authenticateToken, studentRoutes);
+app.use("/api/wallet", authenticateToken, walletRoutes);
 
 app.get("/", (req: Request, res: Response) => {
   res.send(`✅ API is running in ${NODE_ENV} mode...`);
 });
 
-app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-  console.error("❌ Error:", err.stack || err.message);
-  res.status(500).json({ message: "Internal Server Error" });
-});
+app.use(errorHandler);
 
 app.listen(PORT, () => {
   console.log(`🚀 Server is running on port ${PORT} in ${NODE_ENV} mode`);

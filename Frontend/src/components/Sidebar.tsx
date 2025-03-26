@@ -4,10 +4,12 @@ import { useAuth } from "../context/AuthContext";
 
 const Sidebar: React.FC = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isPaymentsOpen, setIsPaymentsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { user, logout } = useAuth();
 
   const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
+  const togglePayments = () => setIsPaymentsOpen(!isPaymentsOpen);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -20,7 +22,7 @@ const Sidebar: React.FC = () => {
   }, []);
 
   return (
-    <div className="h-screen w-52 bg-white text-gray-600 p-4">
+    <div className="h-screen w-52 bg-white text-gray-600 p-4 overflow-y-auto">
       <div className="relative">
         <div className="flex items-center space-x-4 mb-6 cursor-pointer" onClick={toggleDropdown}>
           <div className="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center">
@@ -28,8 +30,17 @@ const Sidebar: React.FC = () => {
           </div>
           <div className="flex items-center">
             <div className="font-bold">{user?.role === "superadmin" ? "Surya Pal" : "Admin"}</div>
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-4 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className={`h-5 w-5 ml-4 text-gray-400 transform ${isDropdownOpen ? "rotate-180" : ""}`}
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fillRule="evenodd"
+                d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                clipRule="evenodd"
+              />
             </svg>
           </div>
         </div>
@@ -37,10 +48,17 @@ const Sidebar: React.FC = () => {
           <div className="absolute left-12 w-42 bg-white text-gray-800 rounded-lg shadow-lg z-10" ref={dropdownRef}>
             <ul className="divide-y divide-gray-300">
               <li>
-                <a href="/myprofile" className="block px-4 py-2 hover:bg-blue-600 hover:text-white rounded-t-lg">My Profile</a>
+                <a href="/myprofile" className="block px-4 py-2 hover:bg-blue-600 hover:text-white rounded-t-lg">
+                  My Profile
+                </a>
               </li>
               <li>
-                <button onClick={logout} className="block w-full text-left px-4 py-2 hover:bg-blue-600 hover:text-white rounded-b-lg">Logout</button>
+                <button
+                  onClick={logout}
+                  className="block w-full text-left px-4 py-2 hover:bg-blue-600 hover:text-white rounded-b-lg"
+                >
+                  Logout
+                </button>
               </li>
             </ul>
           </div>
@@ -50,7 +68,11 @@ const Sidebar: React.FC = () => {
       <div className="mb-6">
         <div className="text-xs font-bold mb-2">NAVIGATION</div>
         <ul className="space-y-2">
-          <li><a href="#" className="block p-2 hover:bg-gray-100 rounded">Dashboard</a></li>
+          <li>
+            <a href="#" className="block p-2 hover:bg-gray-100 rounded">
+              Dashboard
+            </a>
+          </li>
         </ul>
       </div>
       {user?.role === "superadmin" && (
@@ -59,8 +81,16 @@ const Sidebar: React.FC = () => {
           <div className="mb-6">
             <div className="text-xs font-bold mb-2">USERS</div>
             <ul className="space-y-2">
-              <li><Link to="/centers" className="block p-2 hover:bg-gray-100 rounded">Center</Link></li>
-              <li><Link to="/add-center" className="block p-2 hover:bg-gray-100 rounded">Add Center</Link></li>
+              <li>
+                <Link to="/centers" className="block p-2 hover:bg-gray-100 rounded">
+                  Center
+                </Link>
+              </li>
+              <li>
+                <Link to="/add-center" className="block p-2 hover:bg-gray-100 rounded">
+                  Add Center
+                </Link>
+              </li>
             </ul>
           </div>
         </>
@@ -69,10 +99,54 @@ const Sidebar: React.FC = () => {
       <div className="mb-6">
         <div className="text-xs font-bold mb-2">STUDENTS</div>
         <ul className="space-y-2">
-          <li><Link to="/students" className="block p-2 hover:bg-gray-100 rounded">Students</Link></li>
-          <li><Link to="/student-application-foam" className="block p-2 hover:bg-gray-100 rounded">Apply Fresh</Link></li>
-          <li><a href="#" className="block p-2 hover:bg-gray-100 rounded">Exams</a></li>
+          <li>
+            <Link to="/students" className="block p-2 hover:bg-gray-100 rounded">
+              Students
+            </Link>
+          </li>
+          <li>
+            <Link to="/student-application-foam" className="block p-2 hover:bg-gray-100 rounded">
+              Apply Fresh
+            </Link>
+          </li>
+          <li>
+            <a href="#" className="block p-2 hover:bg-gray-100 rounded">
+              Exams
+            </a>
+          </li>
         </ul>
+      </div>
+      <div className="my-4 border-t border-gray-500"></div>
+      <div className="mb-6">
+        <div className="flex items-center justify-between cursor-pointer" onClick={togglePayments}>
+          <div className="text-xs font-bold mb-2">PAYMENTS</div>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className={`h-5 w-5 text-gray-400 transform ${isPaymentsOpen ? "rotate-180" : ""}`}
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              fillRule="evenodd"
+              d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+              clipRule="evenodd"
+            />
+          </svg>
+        </div>
+        {isPaymentsOpen && (
+          <ul className="space-y-2 mt-2 mb-20 ">
+            <li>
+              <Link to="/online-payments" className="block p-2 pl-6 hover:bg-gray-100 rounded">
+                Online
+              </Link>
+            </li>
+            <li>
+              <Link to="/offline-payments" className="block p-2 pl-6 hover:bg-gray-100 rounded">
+                Offline
+              </Link>
+            </li>
+          </ul>
+        )}
       </div>
     </div>
   );

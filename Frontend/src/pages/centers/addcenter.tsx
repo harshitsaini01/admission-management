@@ -8,11 +8,11 @@ const AddCenter: React.FC = () => {
     email: "",
     password: "",
     contactNumber: "",
-    wallet: "",
+    walletBalance: 0, // Changed to walletBalance (number)
     subCenterAccess: false,
     status: true,
   });
-  const [generatedCode, setGeneratedCode] = useState<string | null>(null); // Store the generated code
+  const [generatedCode, setGeneratedCode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -32,8 +32,9 @@ const AddCenter: React.FC = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${user.token}`, // Added Authorization header
         },
-        body: JSON.stringify(formData), // No code in formData, it’s generated on backend
+        body: JSON.stringify(formData),
         credentials: "include",
       });
 
@@ -44,7 +45,7 @@ const AddCenter: React.FC = () => {
       }
 
       const data = await response.json();
-      setGeneratedCode(data.center.code); // Display the generated code
+      setGeneratedCode(data.center.code);
       setSuccess(data.message || "Center added successfully");
       setError(null);
       setFormData({
@@ -52,7 +53,7 @@ const AddCenter: React.FC = () => {
         email: "",
         password: "",
         contactNumber: "",
-        wallet: "",
+        walletBalance: 0, // Reset to 0
         subCenterAccess: false,
         status: true,
       });
@@ -68,7 +69,7 @@ const AddCenter: React.FC = () => {
     const { name, value, type, checked } = e.target as HTMLInputElement;
     setFormData((prev) => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : value,
+      [name]: type === "checkbox" ? checked : name === "walletBalance" ? parseFloat(value) || 0 : value,
     }));
   };
 
@@ -141,14 +142,15 @@ const AddCenter: React.FC = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Wallet</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Wallet Balance (₹)</label>
               <input
-                type="text"
-                name="wallet"
-                value={formData.wallet}
+                type="number"
+                name="walletBalance"
+                value={formData.walletBalance}
                 onChange={handleChange}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Enter wallet details"
+                placeholder="Enter initial wallet balance"
+                min="0"
               />
             </div>
           </div>

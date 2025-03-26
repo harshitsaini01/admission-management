@@ -10,7 +10,7 @@ type CenterData = {
   password: string;
   subCenterAccess: boolean;
   contactNumber: string;
-  wallet: string;
+  walletBalance: number; // Changed from wallet (string) to walletBalance (number)
   status: boolean;
 };
 
@@ -39,8 +39,8 @@ const Allcenters: React.FC = () => {
         const response = await fetch(`${API_URL}/api/centers`, {
           credentials: "include",
           headers: {
-            "Authorization": `Bearer ${user.token}`,
             "Content-Type": "application/json",
+            "Authorization": `Bearer ${user.token}`, // Added Authorization header
           },
         });
         if (!response.ok) {
@@ -65,8 +65,8 @@ const Allcenters: React.FC = () => {
         method: "PATCH",
         credentials: "include",
         headers: {
-          "Authorization": `Bearer ${user?.token}`,
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${user?.token}`, // Added Authorization header
         },
         body: JSON.stringify({ subCenterAccess: !currentStatus }),
       });
@@ -88,8 +88,8 @@ const Allcenters: React.FC = () => {
         method: "PATCH",
         credentials: "include",
         headers: {
-          "Authorization": `Bearer ${user?.token}`,
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${user?.token}`, // Added Authorization header
         },
         body: JSON.stringify({ status: !currentStatus }),
       });
@@ -113,8 +113,8 @@ const Allcenters: React.FC = () => {
         method: "DELETE",
         credentials: "include",
         headers: {
-          "Authorization": `Bearer ${user?.token}`,
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${user?.token}`, // Added Authorization header
         },
       });
       if (!response.ok) {
@@ -145,7 +145,7 @@ const Allcenters: React.FC = () => {
               <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase">Password</th>
               <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase">Sub-Center Access</th>
               <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase">Contact Number</th>
-              <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase">Wallet</th>
+              <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase">Wallet Balance (₹)</th>
               <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase">Status</th>
               <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase">Actions</th>
             </tr>
@@ -172,7 +172,7 @@ const Allcenters: React.FC = () => {
                   </button>
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">{center.contactNumber}</td>
-                <td className="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">{center.wallet}</td>
+                <td className="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">{center.walletBalance.toLocaleString()}</td>
                 <td className="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">
                   <button
                     onClick={() => toggleStatus(center._id, center.status)}

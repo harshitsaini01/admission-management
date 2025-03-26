@@ -8,11 +8,12 @@ import Addcenter from "./pages/centers/addcenter";
 import Allcenters from "./pages/centers/allcenters";
 import Allstudents from "./pages/students/allstudents";
 import Login from "./pages/auth/Login";
+import OfflinePayments from "./wallet/OfflinePayments";
 
 const App: React.FC = () => {
   return (
-    <Router> {/* Router wraps everything */}
-      <AuthProvider> {/* AuthProvider inside Router */}
+    <Router>
+      <AuthProvider>
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route
@@ -61,6 +62,16 @@ const App: React.FC = () => {
               <ProtectedRoute allowedRoles={["superadmin", "admin"]}>
                 <Layout>
                   <Allstudents />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/offline-payments"
+            element={
+              <ProtectedRoute allowedRoles={["superadmin", "admin"]}>
+                <Layout>
+                  <OfflinePayments />
                 </Layout>
               </ProtectedRoute>
             }

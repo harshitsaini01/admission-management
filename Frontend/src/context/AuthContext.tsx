@@ -2,30 +2,33 @@ import React, { createContext, useState, useContext, ReactNode, useEffect } from
 import { useNavigate } from "react-router-dom";
 
 interface AuthContextType {
-  user: { role: string; token?: string; centerId?: string; university?: string } | null;
+  user: { role: string; centerId?: string; university?: string } | null;
   login: (username: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<{ role: string; token?: string; centerId?: string; university?: string } | null>(null);
+  const [user, setUser] = useState<AuthContextType["user"]>(null);
   const navigate = useNavigate();
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
   const checkAuth = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/centers`, {
+      const response = await fetch(`${API_URL}/api/check-auth`, {
         credentials: "include",
       });
+
       if (response.ok) {
-        const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
-        setUser({ ...storedUser });
-        console.log("Auth check successful, user:", storedUser); // Debug log
+        const data = await response.json();
+        const newUser = { role: data.role, centerId: data.centerId, university: data.university };
+        setUser(newUser);
+        localStorage.setItem("user", JSON.stringify(newUser));
+        console.log("Auth check successful, user:", newUser);
       } else {
-        console.log("Auth check failed, status:", response.status); // Debug log
+        console.log("Auth check failed, status:", response.status);
         setUser(null);
         localStorage.removeItem("user");
         navigate("/login");
@@ -33,6 +36,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } catch (error) {
       console.error("Auth check failed:", error);
       setUser(null);
+      localStorage.removeItem("user");
       navigate("/login");
     }
   };
@@ -55,7 +59,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const newUser = { role: data.role, centerId: data.centerId, university: data.university };
       setUser(newUser);
       localStorage.setItem("user", JSON.stringify(newUser));
-      console.log("Login successful, user:", newUser); // Debug log
+      console.log("Login successful, user:", newUser);
       navigate(data.role === "superadmin" ? "/centers" : "/students");
     } catch (error: any) {
       console.error("Login failed:", error.message);
@@ -74,7 +78,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
     setUser(null);
     localStorage.removeItem("user");
-    document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
     navigate("/login");
   };
 
