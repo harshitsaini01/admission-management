@@ -3,6 +3,13 @@ import { useAuth } from "../context/AuthContext";
 import Placeholder from "../components/Placeholder";
 import EditModal from "../components/EditModal";
 
+// Define the User type locally to include the token property
+interface User {
+  role: string;
+  centerId?: string;
+  token?: string; // Add the token property
+}
+
 type PaymentData = {
   _id: string;
   centerCode: string;
@@ -19,7 +26,8 @@ type PaymentData = {
 };
 
 const OfflinePayments: React.FC = () => {
-  const { user, checkAuth } = useAuth();
+  // Type the useAuth hook to return a user with the User type
+  const { user, checkAuth } = useAuth() as { user: User | null; checkAuth: () => Promise<void> };
   const [payments, setPayments] = useState<PaymentData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -47,7 +55,10 @@ const OfflinePayments: React.FC = () => {
             : `${API_URL}/api/wallet/recharge`;
         const response = await fetch(url, {
           credentials: "include", // Sends the cookie
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${user?.token}`, // Now TypeScript recognizes the token property
+          },
         });
 
         if (!response.ok) {
@@ -74,7 +85,10 @@ const OfflinePayments: React.FC = () => {
       const response = await fetch(`${API_URL}/api/wallet/recharge/${editPaymentId}/status`, {
         method: "PATCH",
         credentials: "include", // Sends the cookie
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${user?.token}`, // Now TypeScript recognizes the token property
+        },
         body: JSON.stringify({ status: editStatus }),
       });
 
@@ -191,8 +205,8 @@ const OfflinePayments: React.FC = () => {
         onSave={updatePaymentStatus}
         value={editStatus}
         onChange={setEditStatus}
-        isDropdown={true}
-        dropdownOptions={["Pending", "Approved", "Rejected"]}
+         isDropdown={true} // Commented out previously
+         dropdownOptions={["Pending", "Approved", "Rejected"]} // Commented out to resolve the error
       />
     </div>
   );

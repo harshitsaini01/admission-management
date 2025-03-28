@@ -7,10 +7,28 @@ interface EditModalProps {
   value: string;
   onChange: (value: string) => void;
   field?: string; // Add field prop to determine input type
+  isDropdown?: boolean; // Add isDropdown prop to enable dropdown rendering
+  dropdownOptions?: string[]; // Add dropdownOptions prop for dynamic options
 }
 
-const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, onSave, value, onChange, field }) => {
+const EditModal: React.FC<EditModalProps> = ({
+  isOpen,
+  onClose,
+  onSave,
+  value,
+  onChange,
+  field,
+  isDropdown,
+  dropdownOptions,
+}) => {
   if (!isOpen) return null;
+
+  // Determine the label based on the field or a default
+  const getLabel = () => {
+    if (field === "applicationStatus") return "Application Status";
+    if (field) return `Edit ${field.charAt(0).toUpperCase() + field.slice(1)}`; // Capitalize the field name
+    return "Edit Value"; // Default label
+  };
 
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50">
@@ -29,8 +47,25 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, onSave, value, o
           </button>
         </div>
 
-        {/* Conditionally render input based on field */}
-        {field === "applicationStatus" ? (
+        {/* Conditionally render input based on isDropdown or field */}
+        {isDropdown && dropdownOptions && dropdownOptions.length > 0 ? (
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {getLabel()}
+            </label>
+            <select
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+              className="w-full p-2 border rounded-md"
+            >
+              {dropdownOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : field === "applicationStatus" ? (
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Application Status
@@ -49,7 +84,7 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, onSave, value, o
         ) : (
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Edit Value
+              {getLabel()}
             </label>
             <input
               type="text"

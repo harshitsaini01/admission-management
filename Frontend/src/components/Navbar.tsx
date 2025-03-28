@@ -4,14 +4,10 @@ import { WalletIcon } from "@heroicons/react/24/outline"; // Wallet icon
 import RechargeModal from "../wallet/RechargeModal"; 
 
 const Navbar: React.FC = () => {
-  // const [selectedUniversity, setSelectedUniversity] = useState("Select University");
-  const { user, logout } = useAuth();
+  // Remove `user` since it's not used
+  const { logout } = useAuth();
   const [isRechargeModalOpen, setIsRechargeModalOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-
-  // const handleUniversityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-  //   setSelectedUniversity(e.target.value);
-  // };
 
   const handleDropdownSelect = (option: string) => {
     if (option === "Recharge") {
@@ -54,20 +50,6 @@ const Navbar: React.FC = () => {
             )}
           </div>
 
-          {/* {user?.role === "superadmin" && (
-            <select
-              value={selectedUniversity}
-              onChange={handleUniversityChange}
-              className="bg-white text-gray-700 py-2 px-4 rounded"
-            >
-              <option value="Select University" disabled>
-                Select University
-              </option>
-              <option value="DU">Delhi University (DU)</option>
-              <option value="IIT">Indian Institute of Technology (IIT)</option>
-              <option value="BHU">Banaras Hindu University (BHU)</option>
-            </select>
-          )} */}
           <button
             onClick={logout}
             className="bg-red-500 py-2 px-4 rounded hover:bg-red-600"

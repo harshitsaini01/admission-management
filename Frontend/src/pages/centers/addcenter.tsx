@@ -1,8 +1,16 @@
 import React, { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 
+// Define the User type locally to include the token property
+interface User {
+  role: string;
+  centerId?: string;
+  token?: string; // Add the token property
+}
+
 const AddCenter: React.FC = () => {
-  const { user } = useAuth();
+  // Type the useAuth hook to return a user with the User type
+  const { user } = useAuth() as { user: User | null };
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -32,7 +40,7 @@ const AddCenter: React.FC = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${user.token}`, // Added Authorization header
+          "Authorization": `Bearer ${user.token}`, // Now TypeScript recognizes the token property
         },
         body: JSON.stringify(formData),
         credentials: "include",

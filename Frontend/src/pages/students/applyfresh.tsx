@@ -5,8 +5,16 @@ import InputField from "../../components/InputField";
 import FileUpload from "../../components/FileUpload";
 import AcademicSection from "../../components/AcademicSection";
 
+// Define the User type locally to include the token property
+interface User {
+  role: string;
+  centerId?: string;
+  token?: string; // Add the token property
+}
+
 const Applyfresh: React.FC = () => {
-  const { user } = useAuth();
+  // Type the useAuth hook to return a user with the User type
+  const { user } = useAuth() as { user: User | null };
   const [formData, setFormData] = useState({
     center: "",
     centerName: "",
@@ -66,7 +74,7 @@ const Applyfresh: React.FC = () => {
     otherObtainedMarks: "0", // Default to "0"
     otherMaximumMarks: "0", // Default to "0"
     otherPercentage: "0", // Default to "0"
-    University: "",
+    university: "", // Changed from University to university (lowercase)
   });
 
   const [files, setFiles] = useState({
@@ -184,7 +192,7 @@ const Applyfresh: React.FC = () => {
         method: "POST",
         body: formDataToSend,
         credentials: "include",
-        headers: { "Authorization": `Bearer ${user.token}` },
+        headers: { "Authorization": `Bearer ${user?.token}` },
       });
       if (!response.ok) {
         const errorData = await response.json();
@@ -260,7 +268,7 @@ const Applyfresh: React.FC = () => {
       otherObtainedMarks: "0",
       otherMaximumMarks: "0",
       otherPercentage: "0",
-      University: "",
+      university: "", // Changed from University to university (lowercase)
     });
     setFiles({
       photo: null,
@@ -285,10 +293,10 @@ const Applyfresh: React.FC = () => {
         {loading && <Placeholder type="loading" />}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <InputField
+          <InputField
             label="University"
-            name="University"
-            value={formData.University}
+            name="university" // Changed from University to university (lowercase)
+            value={formData.university} // Changed from University to university (lowercase)
             onChange={handleChange}
             type="select"
             options={[
@@ -300,7 +308,6 @@ const Applyfresh: React.FC = () => {
           />
           {user?.role === "superadmin" ? (
             <>
-           
               <InputField
                 label="Center Code"
                 name="center"
@@ -308,7 +315,6 @@ const Applyfresh: React.FC = () => {
                 onChange={handleChange}
                 placeholder="Enter 4-digit center code"
                 required
-                
               />
               <InputField
                 label="Center Name"
@@ -340,7 +346,6 @@ const Applyfresh: React.FC = () => {
               />
             </>
           )}
-          
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -358,7 +363,7 @@ const Applyfresh: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <InputField
+          <InputField
             label="Admission Session"
             name="admissionSession"
             value={formData.admissionSession}
@@ -371,8 +376,7 @@ const Applyfresh: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-3 gap-4 mb-6">
-        <InputField label="Mother Name" name="motherName" value={formData.motherName} onChange={handleChange} placeholder="Mother Name" required />
-
+          <InputField label="Mother Name" name="motherName" value={formData.motherName} onChange={handleChange} placeholder="Mother Name" required />
           <InputField
             label="Gender"
             name="gender"
@@ -383,7 +387,6 @@ const Applyfresh: React.FC = () => {
             required
           />
           <InputField label="Date of Birth" name="dob" value={formData.dob} onChange={handleChange} type="date" required />
-         
         </div>
 
         <div className="grid grid-cols-3 gap-4 mb-6">
@@ -429,7 +432,7 @@ const Applyfresh: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-3 gap-4 mb-6">
-        <InputField
+          <InputField
             label="Category"
             name="category"
             value={formData.category}
@@ -438,7 +441,6 @@ const Applyfresh: React.FC = () => {
             options={[{ value: "General", label: "General" }, { value: "OBC", label: "OBC" }, { value: "SC", label: "SC" }, { value: "ST", label: "ST" }]}
             required
           />
-
           <InputField label="Alternate Email" name="alternateEmail" value={formData.alternateEmail} onChange={handleChange} type="email" placeholder="Alternate Email" />
           <InputField label="Alternative Mobile" name="alternativeMobile" value={formData.alternativeMobile} onChange={handleChange} type="tel" placeholder="WhatsApp Number" />
         </div>

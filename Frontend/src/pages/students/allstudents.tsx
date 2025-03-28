@@ -7,6 +7,13 @@ import EditModal from "../../components/EditModal";
 import { showConfirm } from "../../components/Alert";
 import { FaDownload, FaTrash } from "react-icons/fa"; // Importing icons from react-icons
 
+// Define the User type locally to include the token property
+interface User {
+  role: string;
+  centerId?: string;
+  token?: string; // Add the token property
+}
+
 type StudentData = {
   _id: string;
   center: string; // 4-digit code from Applyfresh
@@ -38,11 +45,12 @@ type StudentData = {
   intermediateMarksheet?: string;
   graduationMarksheet?: string;
   otherMarksheet?: string;
-  university?: string; // Added university field
+  university?: string; // Added university field (lowercase)
 };
 
 const Allstudents: React.FC = () => {
-  const { user, checkAuth } = useAuth();
+  // Type the useAuth hook to return a user with the User type
+  const { user, checkAuth } = useAuth() as { user: User | null; checkAuth: () => Promise<void> };
   const [students, setStudents] = useState<StudentData[]>([]);
   const [filteredStudents, setFilteredStudents] = useState<StudentData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -548,7 +556,7 @@ const Allstudents: React.FC = () => {
                 <td className="px-6 py-4 text-sm text-gray-700">{new Date(student.dob).toLocaleDateString()}</td>
                 <td className="px-6 py-4 text-sm text-gray-700">{student.center || "N/A"}</td>
                 <td className="px-6 py-4 text-sm text-gray-700">{student.centerName || "N/A"}</td>
-                <td className="px-6 py-4 text-sm text-gray-700">{student.University || "N/A"}</td>
+                <td className="px-6 py-4 text-sm text-gray-700">{student.university || "N/A"}</td> {/* Fixed case: University to university */}
                 <td className="px-6 py-4 text-sm text-gray-700">{student.email}</td>
                 <td className="px-6 py-4 text-sm text-gray-700">{new Date(student.admDate).toLocaleDateString()}</td>
                 <td className="px-6 py-4 text-sm text-gray-700">{student.apaarAbcId}</td>
