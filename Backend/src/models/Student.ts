@@ -59,7 +59,7 @@ interface IStudent extends Document {
   otherObtainedMarks?: number;
   otherMaximumMarks?: number;
   otherPercentage?: number;
-  University: string; // Added from frontend, required
+  university: string; // Added from frontend, required
   photo: string; // Required per frontend
   studentSignature: string; // Required per frontend
   addressIdProof: string; // Required per frontend
@@ -138,7 +138,7 @@ const StudentSchema: Schema = new Schema(
     otherObtainedMarks: { type: Number, required: false },
     otherMaximumMarks: { type: Number, required: false },
     otherPercentage: { type: Number, required: false },
-    University: { type: String, required: true }, // Added from frontend
+    university: { type: String, required: true }, // Added from frontend
     photo: { type: String, required: true }, // Required per frontend
     studentSignature: { type: String, required: true }, // Required per frontend
     addressIdProof: { type: String, required: true }, // Required per frontend

@@ -81,7 +81,7 @@ const HomePage: React.FC = () => {
     <div className="flex flex-col min-h-screen">
       <div className="flex-1 bg-gray-100 p-8">
         <h1 className="text-xl text-gray-600 mb-6">
-          Hi {user?.role === "superadmin" ? "Sourav" : "Admin"}, Welcome back!
+          Hi {user?.role === "superadmin" ? "Super Admin" : "Admin"}, Welcome back!
         </h1>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
