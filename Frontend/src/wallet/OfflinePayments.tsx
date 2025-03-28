@@ -152,9 +152,9 @@ const OfflinePayments: React.FC = () => {
               <tr key={payment._id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 text-sm text-gray-700">
                   {payment.paySlip ? (
-                    <a href={`${API_URL}/uploads/${payment.paySlip}`} target="_blank" rel="noopener noreferrer">
+                    <a href={`${API_URL}/Backend/uploads/${payment.paySlip}`} target="_blank" rel="noopener noreferrer">
                       <img
-                        src={`${API_URL}/uploads/${payment.paySlip}`}
+                        src={`${API_URL}/Backend/uploads/${payment.paySlip}`}
                         alt="Pay Slip"
                         className="w-10 h-10 object-cover"
                       />
