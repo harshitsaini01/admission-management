@@ -80,8 +80,8 @@ const loginHandler = async (req: Request, res: Response) => {
     const token = jwt.sign(user, JWT_SECRET, { expiresIn: "1d" });
     res.cookie("token", token, {
       httpOnly: true,
-      secure: false,
-      sameSite: "lax",
+      secure: isProduction, // Secure cookies in production (HTTPS)
+      sameSite: isProduction ? "none" : "lax", // Use "none" for cross-site in production
       maxAge: 24 * 60 * 60 * 1000,
       path: "/",
     });
@@ -97,8 +97,8 @@ const loginHandler = async (req: Request, res: Response) => {
       const token = jwt.sign(user, JWT_SECRET, { expiresIn: "1d" });
       res.cookie("token", token, {
         httpOnly: true,
-        secure: false,
-        sameSite: "lax",
+        secure: isProduction, // Secure cookies in production (HTTPS)
+        sameSite: isProduction ? "none" : "lax", // Use "none" for cross-site in production
         maxAge: 24 * 60 * 60 * 1000,
         path: "/",
       });

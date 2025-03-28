@@ -171,7 +171,7 @@ const Sidebar: React.FC = () => {
         {isPaymentsOpen && (
           <ul className="space-y-2 mt-2 mb-20">
             <li>
-              <Link to="/#" className="block p-2 pl-6 hover:bg-gray-100 rounded">
+              <Link to="#" className="block p-2 pl-6 hover:bg-gray-100 rounded">
                 Online
               </Link>
             </li>

@@ -64,7 +64,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setUser(newUser);
       localStorage.setItem("user", JSON.stringify(newUser));
       console.log("Login successful, user:", newUser);
-      navigate(data.role === "superadmin" ? "/centers" : "/students");
+      navigate(data.role === "superadmin" ? "/" : "/");
     } catch (error: any) {
       console.error("Login failed:", error.message);
       throw error;
