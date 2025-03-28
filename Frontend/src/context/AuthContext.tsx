@@ -12,11 +12,13 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<AuthContextType["user"]>(null);
+  const [loading, setLoading] = useState(true); // Add loading state
   const navigate = useNavigate();
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
   const checkAuth = async () => {
     try {
+      setLoading(true); // Set loading to true while checking auth
       const response = await fetch(`${API_URL}/api/check-auth`, {
         credentials: "include",
       });
@@ -31,13 +33,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         console.log("Auth check failed, status:", response.status);
         setUser(null);
         localStorage.removeItem("user");
-        navigate("/login");
+        // Do not navigate to /login here; let components handle it
       }
     } catch (error) {
       console.error("Auth check failed:", error);
       setUser(null);
       localStorage.removeItem("user");
-      navigate("/login");
+      // Do not navigate to /login here; let components handle it
+    } finally {
+      setLoading(false); // Set loading to false after check
     }
   };
 
@@ -84,6 +88,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     checkAuth();
   }, []);
+
+  // Show a loading state while checking auth
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <AuthContext.Provider value={{ user, login, logout, checkAuth }}>

@@ -4,14 +4,14 @@ import { WalletIcon } from "@heroicons/react/24/outline"; // Wallet icon
 import RechargeModal from "../wallet/RechargeModal"; 
 
 const Navbar: React.FC = () => {
-  const [selectedUniversity, setSelectedUniversity] = useState("Select University");
+  // const [selectedUniversity, setSelectedUniversity] = useState("Select University");
   const { user, logout } = useAuth();
   const [isRechargeModalOpen, setIsRechargeModalOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-  const handleUniversityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedUniversity(e.target.value);
-  };
+  // const handleUniversityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  //   setSelectedUniversity(e.target.value);
+  // };
 
   const handleDropdownSelect = (option: string) => {
     if (option === "Recharge") {
@@ -24,7 +24,7 @@ const Navbar: React.FC = () => {
     <nav className="bg-blue-500 p-4 text-white">
       <div className="container mx-auto flex justify-between items-center">
         <div className="text-xl font-bold">
-          {user?.role === "superadmin" ? "Super Admin" : user?.university || selectedUniversity}
+          Tamanna Educations
         </div>
         <div className="flex items-center space-x-4">
           {/* Wallet Dropdown */}
@@ -54,7 +54,7 @@ const Navbar: React.FC = () => {
             )}
           </div>
 
-          {user?.role === "superadmin" && (
+          {/* {user?.role === "superadmin" && (
             <select
               value={selectedUniversity}
               onChange={handleUniversityChange}
@@ -67,7 +67,7 @@ const Navbar: React.FC = () => {
               <option value="IIT">Indian Institute of Technology (IIT)</option>
               <option value="BHU">Banaras Hindu University (BHU)</option>
             </select>
-          )}
+          )} */}
           <button
             onClick={logout}
             className="bg-red-500 py-2 px-4 rounded hover:bg-red-600"

@@ -10,7 +10,7 @@ type CenterData = {
   password: string;
   subCenterAccess: boolean;
   contactNumber: string;
-  walletBalance: number; // Changed from wallet (string) to walletBalance (number)
+  walletBalance: number;
   status: boolean;
 };
 
@@ -36,19 +36,28 @@ const Allcenters: React.FC = () => {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(`${API_URL}/api/centers`, {
-          credentials: "include",
+        // Modify the API URL based on user role
+        const url =
+          user.role === "admin"
+            ? `${API_URL}/api/centers/${user.centerId}` // Fetch only the admin's center
+            : `${API_URL}/api/centers`; // Superadmin fetches all centers
+
+        const response = await fetch(url, {
+          credentials: "include", // Rely on session cookie for authentication
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${user.token}`, // Added Authorization header
           },
         });
+
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
         }
-        const data: CenterData[] = await response.json();
-        setCenters(data);
+
+        const data = await response.json();
+        // If admin, wrap the single center in an array; otherwise, use the array of centers
+        const centersData = user.role === "admin" ? [data] : data;
+        setCenters(centersData);
       } catch (err: any) {
         setError(err.message || "Failed to fetch centers.");
         console.error("Error fetching centers:", err);
@@ -63,10 +72,9 @@ const Allcenters: React.FC = () => {
     try {
       const response = await fetch(`${API_URL}/api/centers/${id}/subCenterAccess`, {
         method: "PATCH",
-        credentials: "include",
+        credentials: "include", // Rely on session cookie for authentication
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${user?.token}`, // Added Authorization header
         },
         body: JSON.stringify({ subCenterAccess: !currentStatus }),
       });
@@ -86,10 +94,9 @@ const Allcenters: React.FC = () => {
     try {
       const response = await fetch(`${API_URL}/api/centers/${id}/status`, {
         method: "PATCH",
-        credentials: "include",
+        credentials: "include", // Rely on session cookie for authentication
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${user?.token}`, // Added Authorization header
         },
         body: JSON.stringify({ status: !currentStatus }),
       });
@@ -111,10 +118,9 @@ const Allcenters: React.FC = () => {
     try {
       const response = await fetch(`${API_URL}/api/centers/${id}`, {
         method: "DELETE",
-        credentials: "include",
+        credentials: "include", // Rely on session cookie for authentication
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${user?.token}`, // Added Authorization header
         },
       });
       if (!response.ok) {
@@ -128,9 +134,29 @@ const Allcenters: React.FC = () => {
     }
   };
 
-  if (loading) return <div className="min-h-screen bg-gray-100 p-6"><h1 className="text-2xl font-bold mb-6 text-center">Center Management</h1><div className="text-center">Loading...</div></div>;
-  if (error) return <div className="min-h-screen bg-gray-100 p-6"><h1 className="text-2xl font-bold mb-6 text-center">Center Management</h1><div className="text-center text-red-500">{error}</div></div>;
-  if (centers.length === 0) return <div className="min-h-screen bg-gray-100 p-6"><h1 className="text-2xl font-bold mb-6 text-center">Center Management</h1><div className="bg-white rounded-lg shadow-md p-6 text-center"><p className="text-gray-600">No centers found.</p></div></div>;
+  if (loading)
+    return (
+      <div className="min-h-screen bg-gray-100 p-6">
+        <h1 className="text-2xl font-bold mb-6 text-center">Center Management</h1>
+        <div className="text-center">Loading...</div>
+      </div>
+    );
+  if (error)
+    return (
+      <div className="min-h-screen bg-gray-100 p-6">
+        <h1 className="text-2xl font-bold mb-6 text-center">Center Management</h1>
+        <div className="text-center text-red-500">{error}</div>
+      </div>
+    );
+  if (centers.length === 0)
+    return (
+      <div className="min-h-screen bg-gray-100 p-6">
+        <h1 className="text-2xl font-bold mb-6 text-center">Center Management</h1>
+        <div className="bg-white rounded-lg shadow-md p-6 text-center">
+          <p className="text-gray-600">No centers found.</p>
+        </div>
+      </div>
+    );
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
@@ -153,48 +179,60 @@ const Allcenters: React.FC = () => {
           <tbody className="divide-y divide-gray-200">
             {centers.map((center) => (
               <tr key={center._id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">{center.name}</td>
-                <td className="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">{center.email}</td>
-                <td className="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">{center.code}</td>
-                <td className="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">{center.password}</td>
+                <td className="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">{center.name || "N/A"}</td>
+                <td className="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">{center.email || "N/A"}</td>
+                <td className="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">{center.code || "N/A"}</td>
+                <td className="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">{center.password || "N/A"}</td>
                 <td className="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">
-                  <button
-                    onClick={() => toggleSubCenterAccess(center._id, center.subCenterAccess)}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
-                      center.subCenterAccess ? "bg-green-500" : "bg-gray-300"
-                    }`}
-                  >
-                    <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        center.subCenterAccess ? "translate-x-6" : "translate-x-1"
+                  {user?.role === "superadmin" ? (
+                    <button
+                      onClick={() => toggleSubCenterAccess(center._id, center.subCenterAccess ?? false)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+                        center.subCenterAccess ? "bg-green-500" : "bg-gray-300"
                       }`}
-                    />
-                  </button>
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          center.subCenterAccess ? "translate-x-6" : "translate-x-1"
+                        }`}
+                      />
+                    </button>
+                  ) : (
+                    <span>{center.subCenterAccess ? "Enabled" : "Disabled"}</span>
+                  )}
                 </td>
-                <td className="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">{center.contactNumber}</td>
-                <td className="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">{center.walletBalance.toLocaleString()}</td>
+                <td className="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">{center.contactNumber || "N/A"}</td>
                 <td className="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">
-                  <button
-                    onClick={() => toggleStatus(center._id, center.status)}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
-                      center.status ? "bg-green-500" : "bg-gray-300"
-                    }`}
-                  >
-                    <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        center.status ? "translate-x-6" : "translate-x-1"
-                      }`}
-                    />
-                  </button>
+                  {(center.walletBalance ?? 0).toLocaleString()}
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">
-                  <button
-                    onClick={() => deleteCenter(center._id)}
-                    className="text-red-500 hover:text-red-700"
-                    title="Delete Center"
-                  >
-                    <FaTrash />
-                  </button>
+                  {user?.role === "superadmin" ? (
+                    <button
+                      onClick={() => toggleStatus(center._id, center.status ?? false)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+                        center.status ? "bg-green-500" : "bg-gray-300"
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          center.status ? "translate-x-6" : "translate-x-1"
+                        }`}
+                      />
+                    </button>
+                  ) : (
+                    <span>{center.status ? "Active" : "Inactive"}</span>
+                  )}
+                </td>
+                <td className="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">
+                  {user?.role === "superadmin" && (
+                    <button
+                      onClick={() => deleteCenter(center._id)}
+                      className="text-red-500 hover:text-red-700"
+                      title="Delete Center"
+                    >
+                      <FaTrash />
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}

@@ -49,7 +49,7 @@ const App: React.FC = () => {
           <Route
             path="/centers"
             element={
-              <ProtectedRoute allowedRoles={["superadmin"]}>
+              <ProtectedRoute allowedRoles={["superadmin", "admin"]}> {/* Allow both superadmin and admin */}
                 <Layout>
                   <Allcenters />
                 </Layout>

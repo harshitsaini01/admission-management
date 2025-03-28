@@ -16,6 +16,9 @@ const PORT = config.PORT;
 const MONGO_URI = config.MONGO_URI!;
 const JWT_SECRET = config.JWT_SECRET;
 const NODE_ENV = config.NODE_ENV;
+// Load superadmin credentials from config
+const SUPERADMIN_USERNAME = config.SUPERADMIN_USERNAME;
+const SUPERADMIN_PASSWORD = config.SUPERADMIN_PASSWORD;
 
 const app = express();
 
@@ -65,7 +68,8 @@ const loginHandler = async (req: Request, res: Response) => {
     return;
   }
 
-  if (username === "1" && password === "1") {
+  // Use environment variables for superadmin credentials
+  if (username === SUPERADMIN_USERNAME && password === SUPERADMIN_PASSWORD) {
     const user = { role: "superadmin", username };
     const token = jwt.sign(user, JWT_SECRET, { expiresIn: "1d" });
     res.cookie("token", token, {

@@ -5,8 +5,11 @@ import { useAuth } from "../context/AuthContext";
 const Sidebar: React.FC = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isPaymentsOpen, setIsPaymentsOpen] = useState(false);
+  const [centerName, setCenterName] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { user, logout } = useAuth();
+
+  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
   const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
   const togglePayments = () => setIsPaymentsOpen(!isPaymentsOpen);
@@ -21,15 +24,44 @@ const Sidebar: React.FC = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    const fetchCenterName = async () => {
+      if (user?.role === "admin" && user?.centerId) {
+        try {
+          const response = await fetch(`${API_URL}/api/centers/${user.centerId}`, {
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+          }
+
+          const center = await response.json();
+          setCenterName(center.name);
+        } catch (error: any) {
+          console.error("Error fetching center name:", error.message);
+          setCenterName(null);
+        }
+      }
+    };
+    fetchCenterName();
+  }, [user]);
+
   return (
     <div className="h-screen w-52 bg-white text-gray-600 p-4 overflow-y-auto">
       <div className="relative">
         <div className="flex items-center space-x-4 mb-6 cursor-pointer" onClick={toggleDropdown}>
           <div className="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center">
-            <span className="text-sm text-white">SP</span>
+            <span className="text-sm text-white">  </span>
           </div>
           <div className="flex items-center">
-            <div className="font-bold">{user?.role === "superadmin" ? "Surya Pal" : "Admin"}</div>
+            <div className="font-bold">
+              {user?.role === "superadmin" ? "Super Admin" : centerName || "Admin"}
+            </div>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               className={`h-5 w-5 ml-4 text-gray-400 transform ${isDropdownOpen ? "rotate-180" : ""}`}
@@ -69,32 +101,30 @@ const Sidebar: React.FC = () => {
         <div className="text-xs font-bold mb-2">NAVIGATION</div>
         <ul className="space-y-2">
           <li>
-            <a href="#" className="block p-2 hover:bg-gray-100 rounded">
+            <a href="/" className="block p-2 hover:bg-gray-100 rounded">
               Dashboard
             </a>
           </li>
         </ul>
       </div>
-      {user?.role === "superadmin" && (
-        <>
-          <div className="my-4 border-t border-gray-500"></div>
-          <div className="mb-6">
-            <div className="text-xs font-bold mb-2">USERS</div>
-            <ul className="space-y-2">
-              <li>
-                <Link to="/centers" className="block p-2 hover:bg-gray-100 rounded">
-                  Center
-                </Link>
-              </li>
-              <li>
-                <Link to="/add-center" className="block p-2 hover:bg-gray-100 rounded">
-                  Add Center
-                </Link>
-              </li>
-            </ul>
-          </div>
-        </>
-      )}
+      <div className="my-4 border-t border-gray-500"></div>
+      <div className="mb-6">
+        <div className="text-xs font-bold mb-2">USERS</div>
+        <ul className="space-y-2">
+          <li>
+            <Link to="/centers" className="block p-2 hover:bg-gray-100 rounded">
+              Center
+            </Link>
+          </li>
+          {user?.role === "superadmin" && (
+            <li>
+              <Link to="/add-center" className="block p-2 hover:bg-gray-100 rounded">
+                Add Center
+              </Link>
+            </li>
+          )}
+        </ul>
+      </div>
       <div className="my-4 border-t border-gray-500"></div>
       <div className="mb-6">
         <div className="text-xs font-bold mb-2">STUDENTS</div>
@@ -112,6 +142,11 @@ const Sidebar: React.FC = () => {
           <li>
             <a href="#" className="block p-2 hover:bg-gray-100 rounded">
               Exams
+            </a>
+          </li>
+          <li>
+            <a href="#" className="block p-2 hover:bg-gray-100 rounded">
+              Re Reg
             </a>
           </li>
         </ul>
@@ -134,9 +169,9 @@ const Sidebar: React.FC = () => {
           </svg>
         </div>
         {isPaymentsOpen && (
-          <ul className="space-y-2 mt-2 mb-20 ">
+          <ul className="space-y-2 mt-2 mb-20">
             <li>
-              <Link to="/online-payments" className="block p-2 pl-6 hover:bg-gray-100 rounded">
+              <Link to="/#" className="block p-2 pl-6 hover:bg-gray-100 rounded">
                 Online
               </Link>
             </li>

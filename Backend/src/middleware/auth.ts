@@ -4,9 +4,6 @@ import config from "../config"; // Import the shared config
 
 const JWT_SECRET = config.JWT_SECRET;
 
-// Log the JWT_SECRET to confirm it's loaded correctly
-console.log("JWT_SECRET in auth.ts:", JWT_SECRET);
-
 const authenticateToken = (req: Request, res: Response, next: NextFunction): void => {
   const token = req.cookies.token;
   console.log("Received token:", token);

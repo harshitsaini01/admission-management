@@ -1,5 +1,6 @@
 import express from "express";
 import Center from "../models/Center";
+import Student from "../models/Student";
 import mongoose from "mongoose";
 import { generateUniqueCode } from "../utils/generateUniqueCode";
 
@@ -67,7 +68,7 @@ const getCenterById = async (req: express.Request, res: express.Response) => {
       res.status(404).json({ message: "Center not found" });
       return;
     }
-    res.status(200).json({ code: center.code, name: center.name });
+    res.status(200).json(center);
   } catch (error: any) {
     console.error("Error fetching center by ID:", error);
     res.status(500).json({ message: "Failed to fetch center", error: error.message });
@@ -176,6 +177,50 @@ const deleteCenter = async (req: express.Request, res: express.Response) => {
   }
 };
 
+const getDashboardStats = async (req: express.Request, res: express.Response) => {
+  const user = (req as any).user;
+
+  try {
+    const sessions = ["Jan-2024", "Jan-2025"];
+    const stats: { [key: string]: { totalApplications: number; totalEnrolled: number; totalProcessed: number; totalPending: number; totalCenters: number } } = {};
+
+    for (const session of sessions) {
+      let studentsQuery = Student.find({ admissionSession: session });
+      if (user.role === "admin" && user.centerId) {
+        studentsQuery = studentsQuery.where("centerId").equals(user.centerId);
+      }
+
+      const students = await studentsQuery.exec();
+
+      const totalApplications = students.length;
+      const totalEnrolled = students.filter((student: any) => student.enrollmentNumber).length;
+      const totalProcessed = students.filter((student: any) => student.processedOn).length;
+      const totalPending = students.filter((student: any) => !student.processedOn && !student.enrollmentNumber).length;
+
+      let totalCenters;
+      if (user.role === "superadmin") {
+        totalCenters = await Center.countDocuments();
+      } else {
+        totalCenters = user.centerId ? 1 : 0;
+      }
+
+      stats[session] = {
+        totalApplications,
+        totalEnrolled,
+        totalProcessed,
+        totalPending,
+        totalCenters,
+      };
+    }
+
+    res.status(200).json(stats);
+  } catch (error: any) {
+    console.error("Error fetching dashboard stats:", error);
+    res.status(500).json({ message: "Failed to fetch dashboard stats", error: error.message });
+  }
+};
+
+router.get("/dashboard/stats", getDashboardStats);
 router.post("/", createCenter);
 router.get("/", getCenters);
 router.get("/code/:code", getCenterByCode);

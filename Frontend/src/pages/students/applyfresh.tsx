@@ -285,8 +285,22 @@ const Applyfresh: React.FC = () => {
         {loading && <Placeholder type="loading" />}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <InputField
+            label="University"
+            name="University"
+            value={formData.University}
+            onChange={handleChange}
+            type="select"
+            options={[
+              { value: "Mangalayatan University- Online", label: "Mangalayatan University- Online" },
+              { value: "Mangalayatan University- Distance", label: "Mangalayatan University- Distance" },
+              { value: "Subharti University", label: "Subharti University" },
+            ]}
+            required
+          />
           {user?.role === "superadmin" ? (
             <>
+           
               <InputField
                 label="Center Code"
                 name="center"
@@ -326,14 +340,7 @@ const Applyfresh: React.FC = () => {
               />
             </>
           )}
-          <InputField
-            label="Admission Session"
-            name="admissionSession"
-            value={formData.admissionSession}
-            onChange={handleChange}
-            placeholder="Jan-2025"
-            required
-          />
+          
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -351,12 +358,21 @@ const Applyfresh: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <InputField label="Student Name" name="studentName" value={formData.studentName} onChange={handleChange} placeholder="STUDENT NAME" required />
-          <InputField label="Father Name" name="fatherName" value={formData.fatherName} onChange={handleChange} placeholder="FATHER NAME" required />
-          <InputField label="Mother Name" name="motherName" value={formData.motherName} onChange={handleChange} placeholder="MOTHER NAME" required />
+        <InputField
+            label="Admission Session"
+            name="admissionSession"
+            value={formData.admissionSession}
+            onChange={handleChange}
+            placeholder="Jan-2025"
+            required
+          />
+          <InputField label="Student Name" name="studentName" value={formData.studentName} onChange={handleChange} placeholder="Student Name " required />
+          <InputField label="Father Name" name="fatherName" value={formData.fatherName} onChange={handleChange} placeholder="Father Name " required />
         </div>
 
         <div className="grid grid-cols-3 gap-4 mb-6">
+        <InputField label="Mother Name" name="motherName" value={formData.motherName} onChange={handleChange} placeholder="Mother Name" required />
+
           <InputField
             label="Gender"
             name="gender"
@@ -367,15 +383,7 @@ const Applyfresh: React.FC = () => {
             required
           />
           <InputField label="Date of Birth" name="dob" value={formData.dob} onChange={handleChange} type="date" required />
-          <InputField
-            label="Category"
-            name="category"
-            value={formData.category}
-            onChange={handleChange}
-            type="select"
-            options={[{ value: "General", label: "General" }, { value: "OBC", label: "OBC" }, { value: "SC", label: "SC" }, { value: "ST", label: "ST" }]}
-            required
-          />
+         
         </div>
 
         <div className="grid grid-cols-3 gap-4 mb-6">
@@ -421,19 +429,16 @@ const Applyfresh: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-3 gap-4 mb-6">
-          <InputField
-            label="University"
-            name="University"
-            value={formData.University}
+        <InputField
+            label="Category"
+            name="category"
+            value={formData.category}
             onChange={handleChange}
             type="select"
-            options={[
-              { value: "Mangalayatan University- Online", label: "Mangalayatan University- Online" },
-              { value: "Mangalayatan University- Distance", label: "Mangalayatan University- Distance" },
-              { value: "Subharti University", label: "Subharti University" },
-            ]}
+            options={[{ value: "General", label: "General" }, { value: "OBC", label: "OBC" }, { value: "SC", label: "SC" }, { value: "ST", label: "ST" }]}
             required
           />
+
           <InputField label="Alternate Email" name="alternateEmail" value={formData.alternateEmail} onChange={handleChange} type="email" placeholder="Alternate Email" />
           <InputField label="Alternative Mobile" name="alternativeMobile" value={formData.alternativeMobile} onChange={handleChange} type="tel" placeholder="WhatsApp Number" />
         </div>
