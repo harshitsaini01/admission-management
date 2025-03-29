@@ -9,6 +9,7 @@ interface ICenter extends Document {
   contactNumber: string;
   walletBalance: number; // Changed from wallet (String) to walletBalance (Number)
   password: string;
+  address: string;
 }
 
 const CenterSchema: Schema = new Schema(
@@ -28,6 +29,8 @@ const CenterSchema: Schema = new Schema(
     contactNumber: { type: String, required: true },
     walletBalance: { type: Number, required: true, default: 0 }, // Changed to Number
     password: { type: String, required: true },
+    address: { type: String },
+
   },
   { timestamps: true }
 );
