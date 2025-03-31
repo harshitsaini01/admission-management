@@ -223,7 +223,7 @@ const createStudent: RequestHandler = async (req, res) => {
       intermediateMarksheet: files?.intermediateMarksheet?.[0]?.filename || "",
       graduationMarksheet: files?.graduationMarksheet?.[0]?.filename || "",
       otherMarksheet: files?.otherMarksheet?.[0]?.filename || "",
-      studentStatus: "Fresh",
+      studentStatus: "Active",
       applicationStatus: "New",
       referenceId,
       admDate,

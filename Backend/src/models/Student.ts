@@ -151,7 +151,7 @@ const StudentSchema: Schema = new Schema(
     applicationNumber: { type: String, required: false },
     enrollmentNumber: { type: String, required: false },
     processedOn: { type: String, required: false },
-    studentStatus: { type: String, default: "Fresh" },
+    studentStatus: { type: String, default: "Active" },
     applicationStatus: { type: String, default: "New" },
     referenceId: { type: String, required: true, unique: true },
     admDate: { type: Date, required: true, default: Date.now },

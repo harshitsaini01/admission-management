@@ -43,7 +43,7 @@ const AcademicSection: React.FC<AcademicSectionProps> = ({
         <h2 className="block text-sm mt-3 font-medium text-gray-700">{title}{required && "*"}</h2>
       </div>
       <InputField
-        label={required ? "Subject*" : "Subject"}
+        label={required ? "Subject" : "Subject"}
         name={`${baseName}Subject`}
         value={formData[`${baseName}Subject`]}
         onChange={onChange}
@@ -65,7 +65,7 @@ const AcademicSection: React.FC<AcademicSectionProps> = ({
         required={required}
       />
       <InputField
-        label={required ? "Board/University*" : "Board/University"}
+        label={required ? "Board/University" : "Board/University"}
         name={`${baseName}Board`}
         value={formData[`${baseName}Board`]}
         onChange={onChange}
@@ -73,14 +73,14 @@ const AcademicSection: React.FC<AcademicSectionProps> = ({
         required={required}
       />
       <InputField
-        label={required ? "Obtained Marks*" : "Obtained Marks"}
+        label={required ? "Obtained Marks" : "Obtained Marks"}
         name={`${baseName}ObtainedMarks`}
         value={formData[`${baseName}ObtainedMarks`]}
         onChange={onChange}
         required={required}
       />
       <InputField
-        label={required ? "Maximum Marks*" : "Maximum Marks"}
+        label={required ? "Maximum Marks" : "Maximum Marks"}
         name={`${baseName}MaximumMarks`}
         value={formData[`${baseName}MaximumMarks`]}
         onChange={onChange}

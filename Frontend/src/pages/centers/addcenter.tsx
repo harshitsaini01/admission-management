@@ -15,7 +15,7 @@ const AddCenter: React.FC = () => {
     email: "",
     password: "",
     contactNumber: "",
-    address: "", // Added address field
+    address: "",
     walletBalance: 0,
     subCenterAccess: false,
     status: true,
@@ -61,7 +61,7 @@ const AddCenter: React.FC = () => {
         email: "",
         password: "",
         contactNumber: "",
-        address: "", // Reset address field
+        address: "",
         walletBalance: 0,
         subCenterAccess: false,
         status: true,
@@ -83,122 +83,124 @@ const AddCenter: React.FC = () => {
   };
 
   return (
-    <div className="bg-gradient-to-br from-gray-100 to-gray-300 flex items-center justify-center p-24">
-      <div className="bg-white rounded-xl shadow-xl p-6 max-w-2xl w-full animate-fade-in">
-        <h1 className="text-2xl font-bold text-gray-800 mb-4 text-center">Add New Center</h1>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-gray-100 to-blue-100 flex items-center justify-center p-6">
+      <div className="bg-white rounded-2xl shadow-lg p-6 max-w-lg w-full transform transition-all duration-500 hover:shadow-xl">
+        <h1 className="text-xl font-semibold text-gray-800 mb-6 text-center">Add New Center</h1>
 
         {error && (
-          <div className="mb-4 p-3 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-lg">
+          <div className="mb-4 p-3 bg-red-50 border-l-4 border-red-500 text-red-600 rounded-lg text-sm">
             {error}
           </div>
         )}
         {success && (
-          <div className="mb-4 p-3 bg-green-50 border-l-4 border-green-500 text-green-700 rounded-lg">
+          <div className="mb-4 p-3 bg-green-50 border-l-4 border-green-500 text-green-600 rounded-lg text-sm">
             {success}
             {generatedCode && (
-              <p className="mt-1 text-sm">Generated Center Code: <strong>{generatedCode}</strong></p>
+              <p className="mt-1 text-xs">
+                Generated Center Code: <strong>{generatedCode}</strong>
+              </p>
             )}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Name</label>
+              <label className="block text-[11px] font-medium text-gray-600 mb-1">Name</label>
               <input
                 type="text"
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm transition-all duration-200"
+                className="w-full p-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-xs bg-gray-50 transition-all duration-200"
                 placeholder="Enter center name"
                 required
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Email</label>
+              <label className="block text-[11px] font-medium text-gray-600 mb-1">Email</label>
               <input
                 type="email"
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm transition-all duration-200"
+                className="w-full p-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-xs bg-gray-50 transition-all duration-200"
                 placeholder="Enter email"
                 required
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Password</label>
+              <label className="block text-[11px] font-medium text-gray-600 mb-1">Password</label>
               <input
                 type="password"
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm transition-all duration-200"
+                className="w-full p-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-xs bg-gray-50 transition-all duration-200"
                 placeholder="Enter password"
                 required
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Contact Number</label>
+              <label className="block text-[11px] font-medium text-gray-600 mb-1">Contact Number</label>
               <input
                 type="text"
                 name="contactNumber"
                 value={formData.contactNumber}
                 onChange={handleChange}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm transition-all duration-200"
+                className="w-full p-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-xs bg-gray-50 transition-all duration-200"
                 placeholder="Enter contact number"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Address</label>
+              <label className="block text-[11px] font-medium text-gray-600 mb-1">Address</label>
               <input
                 type="text"
                 name="address"
                 value={formData.address}
                 onChange={handleChange}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm transition-all duration-200"
+                className="w-full p-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-xs bg-gray-50 transition-all duration-200"
                 placeholder="Enter center address"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Wallet Balance (₹)</label>
+              <label className="block text-[11px] font-medium text-gray-600 mb-1">Wallet Balance (₹)</label>
               <input
                 type="number"
                 name="walletBalance"
                 value={formData.walletBalance}
                 onChange={handleChange}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm transition-all duration-200"
+                className="w-full p-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-xs bg-gray-50 transition-all duration-200"
                 placeholder="Enter initial wallet balance"
                 min="0"
               />
             </div>
           </div>
-          <div className="flex flex-col md:flex-row md:space-x-4">
-            <label className="flex items-center text-xs font-medium text-gray-700">
+          <div className="flex flex-col md:flex-row md:space-x-6">
+            <label className="flex items-center text-[11px] font-medium text-gray-600">
               <input
                 type="checkbox"
                 name="subCenterAccess"
                 checked={formData.subCenterAccess}
                 onChange={handleChange}
-                className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 transition-all duration-200"
+                className="h-4 w-4 text-blue-500 border-gray-300 rounded focus:ring-blue-400 transition-all duration-200"
               />
               <span className="ml-2">Sub-Center Access</span>
             </label>
-            <label className="flex items-center text-xs font-medium text-gray-700">
+            <label className="flex items-center text-[11px] font-medium text-gray-600">
               <input
                 type="checkbox"
                 name="status"
                 checked={formData.status}
                 onChange={handleChange}
-                className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 transition-all duration-200"
+                className="h-4 w-4 text-blue-500 border-gray-300 rounded focus:ring-blue-400 transition-all duration-200"
               />
               <span className="ml-2">Active Status</span>
             </label>
           </div>
           <button
             type="submit"
-            className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white p-2 rounded-lg shadow-md hover:from-blue-600 hover:to-blue-700 transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 text-sm font-medium"
+            className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white py-2.5 rounded-lg shadow-md hover:from-blue-600 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 text-sm font-semibold"
           >
             Add Center
           </button>

@@ -16,7 +16,7 @@ const PORT = config.PORT;
 const MONGO_URI = config.MONGO_URI!;
 const JWT_SECRET = config.JWT_SECRET;
 const NODE_ENV = config.NODE_ENV;
-const CORS_ORIGIN = config.CORS_ORIGIN || "http://localhost:5174"; // Fallback to localhost:5174 for development
+const CORS_ORIGIN = config.CORS_ORIGIN || "http://localhost:5174"; 
 // Load superadmin credentials from config
 const SUPERADMIN_USERNAME = config.SUPERADMIN_USERNAME;
 const SUPERADMIN_PASSWORD = config.SUPERADMIN_PASSWORD;
@@ -29,7 +29,7 @@ const app = express();
 // Configure CORS to allow requests from the frontend domain
 app.use(
   cors({
-    origin: isProduction ? CORS_ORIGIN : "http://localhost:5174", // Use CORS_ORIGIN in production
+    origin: isProduction ? CORS_ORIGIN : "http://localhost:5174", 
     credentials: true,
     methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
