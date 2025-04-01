@@ -1,9 +1,13 @@
+
+
+
+// students.ts
 import express, { Request, Response, RequestHandler, NextFunction } from "express";
 import multer from "multer";
 import mongoose from "mongoose";
 import Student from "../models/Student";
-import Center from "../models/Center"; // Import Center model
-import ICenter from "../models/Center"; // Import ICenter interface as default
+import Center from "../models/Center";
+import ICenter from "../models/Center";
 import path from "path";
 import fs from "fs";
 
@@ -45,6 +49,20 @@ const isSuperadmin = (req: Request, res: Response, next: NextFunction): void => 
   }
   if (user.role !== "superadmin") {
     res.status(403).json({ message: "Only superadmins can perform this action" });
+    return;
+  }
+  next();
+};
+
+// Middleware to check if user is admin
+const isAdmin = (req: Request, res: Response, next: NextFunction): void => {
+  const user = (req as any).user;
+  if (!user) {
+    res.status(401).json({ message: "User not authenticated" });
+    return;
+  }
+  if (user.role !== "admin") {
+    res.status(403).json({ message: "Only admins can perform this action" });
     return;
   }
   next();
@@ -163,7 +181,6 @@ const createStudent: RequestHandler = async (req, res) => {
     const referenceId = await generateReferenceId();
     const admDate = new Date();
 
-    // Handle center data
     let centerId = req.body.centerId;
     let centerCode = req.body.center;
     let centerName = req.body.centerName;
@@ -182,26 +199,25 @@ const createStudent: RequestHandler = async (req, res) => {
         return;
       }
     } else if (user.role === "superadmin") {
-      // For superadmin, find centerId by code
       const center = await Center.findOne({ code: centerCode }) as mongoose.Document & {
         _id: mongoose.Types.ObjectId;
         code: string;
         name: string;
-      } | null; // Explicitly type the expected shape
+      } | null;
       if (!center) {
         console.error("Center not found for code:", centerCode);
         res.status(400).json({ message: "Invalid center code" });
         return;
       }
-      centerId = center._id.toString(); // Now TypeScript knows _id exists
-      centerName = center.name; // Ensure consistency
+      centerId = center._id.toString();
+      centerName = center.name;
     }
 
     const studentData = {
       ...req.body,
-      centerId, // Store centerId (ObjectId)
-      center: centerCode, // Store center code (4-digit)
-      centerName, // Store center name
+      centerId,
+      center: centerCode,
+      centerName,
       highSchoolObtainedMarks: parseFloat(req.body.highSchoolObtainedMarks) || 0,
       highSchoolMaximumMarks: parseFloat(req.body.highSchoolMaximumMarks) || 0,
       highSchoolPercentage: parseFloat(req.body.highSchoolPercentage) || 0,
@@ -227,6 +243,8 @@ const createStudent: RequestHandler = async (req, res) => {
       applicationStatus: "New",
       referenceId,
       admDate,
+      docStatus: "Pending", // Set default
+      pendingDocuments: [], // Set default
     };
 
     const student = new Student(studentData);
@@ -274,8 +292,69 @@ const deleteStudent: RequestHandler = async (req, res) => {
   }
 };
 
+// New route for admins to re-upload documents
+const reuploadDocuments: RequestHandler = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      console.error("Invalid student ID:", id);
+      res.status(400).json({ message: "Invalid student ID" });
+      return;
+    }
+
+    const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+    const student = await Student.findById(id);
+    if (!student) {
+      res.status(404).json({ message: "Student not found" });
+      return;
+    }
+
+    const updates: { [key: string]: string } = {};
+    if (files?.photo?.[0]?.filename) updates.photo = files.photo[0].filename;
+    if (files?.studentSignature?.[0]?.filename) updates.studentSignature = files.studentSignature[0].filename;
+    if (files?.addressIdProof?.[0]?.filename) updates.addressIdProof = files.addressIdProof[0].filename;
+    if (files?.otherDocument?.[0]?.filename) updates.otherDocument = files.otherDocument[0].filename;
+    if (files?.abcDebScreenshot?.[0]?.filename) updates.abcDebScreenshot = files.abcDebScreenshot[0].filename;
+    if (files?.highSchoolMarksheet?.[0]?.filename) updates.highSchoolMarksheet = files.highSchoolMarksheet[0].filename;
+    if (files?.intermediateMarksheet?.[0]?.filename) updates.intermediateMarksheet = files.intermediateMarksheet[0].filename;
+    if (files?.graduationMarksheet?.[0]?.filename) updates.graduationMarksheet = files.graduationMarksheet[0].filename;
+    if (files?.otherMarksheet?.[0]?.filename) updates.otherMarksheet = files.otherMarksheet[0].filename;
+
+    // Update the student with new files and reset docStatus to "Pending"
+    const updatedStudent = await Student.findByIdAndUpdate(
+      id,
+      { ...updates, docStatus: "Pending", pendingDocuments: [] },
+      { new: true }
+    );
+
+    if (!updatedStudent) {
+      res.status(404).json({ message: "Student not found" });
+      return;
+    }
+
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+    const studentWithFullPaths = {
+      ...updatedStudent.toJSON(),
+      photo: updatedStudent.photo ? `${baseUrl}/uploads/${updatedStudent.photo}` : "",
+      studentSignature: updatedStudent.studentSignature ? `${baseUrl}/uploads/${updatedStudent.studentSignature}` : "",
+      addressIdProof: updatedStudent.addressIdProof ? `${baseUrl}/uploads/${updatedStudent.addressIdProof}` : "",
+      otherDocument: updatedStudent.otherDocument ? `${baseUrl}/uploads/${updatedStudent.otherDocument}` : "",
+      abcDebScreenshot: updatedStudent.abcDebScreenshot ? `${baseUrl}/uploads/${updatedStudent.abcDebScreenshot}` : "",
+      highSchoolMarksheet: updatedStudent.highSchoolMarksheet ? `${baseUrl}/uploads/${updatedStudent.highSchoolMarksheet}` : "",
+      intermediateMarksheet: updatedStudent.intermediateMarksheet ? `${baseUrl}/uploads/${updatedStudent.intermediateMarksheet}` : "",
+      graduationMarksheet: updatedStudent.graduationMarksheet ? `${baseUrl}/uploads/${updatedStudent.graduationMarksheet}` : "",
+      otherMarksheet: updatedStudent.otherMarksheet ? `${baseUrl}/uploads/${updatedStudent.otherMarksheet}` : "",
+    };
+
+    res.status(200).json({ message: "Documents re-uploaded successfully", student: studentWithFullPaths });
+  } catch (error: any) {
+    console.error("Error re-uploading documents:", error);
+    res.status(500).json({ message: "Failed to re-upload documents", error: error.message });
+  }
+};
+
 router.get("/", getStudents);
-router.patch("/:id", isSuperadmin, updateStudent); // Restrict to superadmin
+router.patch("/:id", isSuperadmin, updateStudent);
 router.post(
   "/",
   upload.fields([
@@ -291,6 +370,22 @@ router.post(
   ]),
   createStudent
 );
-router.delete("/:id", isSuperadmin, deleteStudent); // Restrict to superadmin
+router.delete("/:id", isSuperadmin, deleteStudent);
+router.patch(
+  "/:id/reupload",
+  isAdmin,
+  upload.fields([
+    { name: "photo", maxCount: 1 },
+    { name: "studentSignature", maxCount: 1 },
+    { name: "addressIdProof", maxCount: 1 },
+    { name: "otherDocument", maxCount: 1 },
+    { name: "abcDebScreenshot", maxCount: 1 },
+    { name: "highSchoolMarksheet", maxCount: 1 },
+    { name: "intermediateMarksheet", maxCount: 1 },
+    { name: "graduationMarksheet", maxCount: 1 },
+    { name: "otherMarksheet", maxCount: 1 },
+  ]),
+  reuploadDocuments
+);
 
 export default router;

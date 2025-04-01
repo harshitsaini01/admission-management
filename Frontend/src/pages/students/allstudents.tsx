@@ -3,8 +3,9 @@ import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import { useAuth } from "../../context/AuthContext";
 import Placeholder from "../../components/Placeholder";
-import { showConfirm } from "../../components/Alert";
+import { useAlert } from "../../components/Alert"; // Import the new useAlert hook
 import { FaDownload, FaTrash } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
 
 // Define the User type locally to include the token property
 interface User {
@@ -45,6 +46,9 @@ type StudentData = {
   graduationMarksheet?: string;
   otherMarksheet?: string;
   university?: string;
+  motherName: string;
+  docStatus?: string;
+  pendingDocuments?: string[];
 };
 
 // Custom EditModal Component with Calendar for Processed On
@@ -60,7 +64,8 @@ const EditModal: React.FC<{
 
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50">
-      <div className="fixed inset-0 bg-black bg-opacity-75" onClick={onClose}></div>
+      <div className="fixed inset-0 bg-transperent bg-opacity-75 backdrop-blur-sm transition-opacity duration-300"
+       onClick={onClose}></div>
       <div className="bg-white rounded-2xl shadow-lg p-5 w-full max-w-md z-50">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-base font-semibold text-gray-800">Edit {field}</h2>
@@ -96,6 +101,7 @@ const EditModal: React.FC<{
 
 const Allstudents: React.FC = () => {
   const { user, checkAuth } = useAuth() as { user: User | null; checkAuth: () => Promise<void> };
+  const { showAlert, showConfirm } = useAlert(); // Use the new useAlert hook
   const [students, setStudents] = useState<StudentData[]>([]);
   const [filteredStudents, setFilteredStudents] = useState<StudentData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -109,10 +115,16 @@ const Allstudents: React.FC = () => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [imageList, setImageList] = useState<string[]>([]);
   const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
+  const [pendingDocs, setPendingDocs] = useState<string[]>([]); // State for selected pending documents
+  const [remark, setRemark] = useState<string>(""); // State for remarks
+  const [selectedStudents, setSelectedStudents] = useState<string[]>([]); // State for selected student IDs
+  const navigate = useNavigate();
 
   // Filter states
   const [applicationStatusFilter, setApplicationStatusFilter] = useState<string>("All");
   const [sessionFilter, setSessionFilter] = useState<string>("All");
+  const [universityFilter, setUniversityFilter] = useState<string>("All"); // New state for university filter
+  const [centerSearch, setCenterSearch] = useState<string>(""); // New state for center search
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [entriesPerPage, setEntriesPerPage] = useState<number>(10);
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -149,6 +161,7 @@ const Allstudents: React.FC = () => {
         const updatedData = data.map((student) => ({
           ...student,
           applicationStatus: student.applicationStatus || "New",
+          docStatus: student.docStatus || "Pending", // Ensure default docStatus
         }));
         setStudents(updatedData);
         setFilteredStudents(updatedData);
@@ -174,6 +187,18 @@ const Allstudents: React.FC = () => {
     if (sessionFilter !== "All") {
       filtered = filtered.filter(
         (student) => student.admissionSession === sessionFilter
+      );
+    }
+
+    if (universityFilter !== "All") {
+      filtered = filtered.filter(
+        (student) => student.university === universityFilter
+      );
+    }
+
+    if (centerSearch) {
+      filtered = filtered.filter((student) =>
+        student.center.toLowerCase().includes(centerSearch.toLowerCase())
       );
     }
 
@@ -204,7 +229,7 @@ const Allstudents: React.FC = () => {
 
     setFilteredStudents(filtered);
     setCurrentPage(1);
-  }, [applicationStatusFilter, sessionFilter, searchQuery, activeFilter, students]);
+  }, [applicationStatusFilter, sessionFilter, universityFilter, centerSearch, searchQuery, activeFilter, students]);
 
   const totalPages = Math.ceil(filteredStudents.length / entriesPerPage);
   const paginatedStudents = filteredStudents.slice(
@@ -247,8 +272,60 @@ const Allstudents: React.FC = () => {
     }
   };
 
+  const downloadSelectedDocuments = async () => {
+    if (selectedStudents.length === 0) {
+      showAlert("Please select at least one student to download documents."); // Updated to use showAlert
+      return;
+    }
+
+    const zip = new JSZip();
+    const selectedStudentsData = students.filter((student) =>
+      selectedStudents.includes(student._id)
+    );
+
+    try {
+      await Promise.all(
+        selectedStudentsData.map(async (student) => {
+          const studentFolder = zip.folder(student.studentName)!; // Create a folder for each student
+          const documentFields = [
+            { url: student.photo, name: "photo" },
+            { url: student.studentSignature, name: "signature" },
+            { url: student.addressIdProof, name: "address_id_proof" },
+            { url: student.otherDocument, name: "other_document" },
+            { url: student.abcDebScreenshot, name: "abc_deb_screenshot" },
+            { url: student.highSchoolMarksheet, name: "high_school_marksheet" },
+            { url: student.intermediateMarksheet, name: "intermediate_marksheet" },
+            { url: student.graduationMarksheet, name: "graduation_marksheet" },
+            { url: student.otherMarksheet, name: "other_marksheet" },
+          ].filter((doc) => doc.url);
+
+          await Promise.all(
+            documentFields.map(async (doc) => {
+              const secureUrl = doc.url?.replace("http://", "https://") || "";
+              const response = await fetch(secureUrl, {
+                credentials: "include",
+                headers: { "Authorization": `Bearer ${user?.token}` },
+              });
+              if (!response.ok) throw new Error(`Failed to fetch ${doc.name}`);
+              const blob = await response.blob();
+              const fileExtension = doc.url?.split(".").pop();
+              studentFolder.file(`${doc.name}.${fileExtension}`, blob);
+            })
+          );
+        })
+      );
+
+      const content = await zip.generateAsync({ type: "blob" });
+      saveAs(content, "selected_students_documents.zip");
+    } catch (error) {
+      console.error("Error downloading selected documents:", error);
+      showAlert("Failed to download documents. Please try again."); // Updated to use showAlert
+    }
+  };
+
   const deleteStudent = async (studentId: string) => {
-    if (!showConfirm(`Are you sure you want to delete the student with ID: ${studentId}?`)) return;
+    const confirmed = await showConfirm(`Are you sure you want to delete the student with ID: ${studentId}?`); // Updated to use showConfirm
+    if (!confirmed) return;
 
     try {
       const response = await fetch(`${API_URL}/api/students/${studentId}`, {
@@ -264,19 +341,20 @@ const Allstudents: React.FC = () => {
 
       setStudents(students.filter((student) => student._id !== studentId));
       setFilteredStudents(filteredStudents.filter((student) => student._id !== studentId));
-      window.alert("Student deleted successfully");
+      setSelectedStudents(selectedStudents.filter((id) => id !== studentId)); // Remove from selected
+      showAlert("Student deleted successfully"); // Updated to use showAlert
     } catch (error: any) {
       setError(error.message || "Error deleting student");
     }
   };
 
-  const updateStudentField = async (studentId: string, field: keyof StudentData, value: string) => {
+  const updateStudentField = async (studentId: string, updates: Partial<StudentData>) => {
     try {
       const response = await fetch(`${API_URL}/api/students/${studentId}`, {
         method: "PATCH",
         credentials: "include",
         headers: { "Authorization": `Bearer ${user?.token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ [field]: value }),
+        body: JSON.stringify(updates),
       });
 
       if (!response.ok) {
@@ -287,7 +365,7 @@ const Allstudents: React.FC = () => {
       const updatedStudent = await response.json();
       setStudents(students.map((student) => (student._id === studentId ? { ...student, ...updatedStudent } : student)));
       setFilteredStudents(filteredStudents.map((student) => (student._id === studentId ? { ...student, ...updatedStudent } : student)));
-      window.alert("Field updated successfully");
+      showAlert("Field updated successfully"); // Updated to use showAlert
     } catch (error: any) {
       setError(error.message || "Error updating student field");
     }
@@ -295,7 +373,7 @@ const Allstudents: React.FC = () => {
 
   const openEditModal = (studentId: string, field: keyof StudentData, currentValue?: string) => {
     if (user?.role !== "superadmin") {
-      window.alert("Only superadmins can edit this field");
+      showAlert("Only superadmins can edit this field"); // Updated to use showAlert
       return;
     }
     setEditField({ studentId, field });
@@ -304,17 +382,23 @@ const Allstudents: React.FC = () => {
   };
 
   const openDocModal = (student: StudentData) => {
-    if (user?.role !== "superadmin") {
-      window.alert("Only superadmins can view document details");
-      return;
+    if (user?.role === "superadmin") {
+      setSelectedStudent(student);
+      setPendingDocs(student.pendingDocuments || []);
+      setRemark("");
+      setIsDocModalOpen(true);
+    } else if (user?.role === "admin" && student.docStatus === "Pendency") {
+      navigate(`/pendency/${student._id}`);
+    } else {
+      showAlert("Only superadmins can view document details or admins can view pendency"); // Updated to use showAlert
     }
-    setSelectedStudent(student);
-    setIsDocModalOpen(true);
   };
 
   const closeDocModal = () => {
     setIsDocModalOpen(false);
     setSelectedStudent(null);
+    setPendingDocs([]);
+    setRemark("");
   };
 
   const openImageModal = (imageUrl: string) => {
@@ -383,6 +467,67 @@ const Allstudents: React.FC = () => {
     }
   };
 
+  const getDocStatusColor = (status: string | undefined) => {
+    switch (status) {
+      case "Pending":
+        return "text-blue-500 hover:text-blue-700";
+      case "Pendency":
+        return "text-red-500 hover:text-red-700";
+      case "Verified":
+        return "text-green-500 hover:text-green-700";
+      default:
+        return "text-blue-500 hover:text-blue-700";
+    }
+  };
+
+  const handlePendency = async () => {
+    if (!selectedStudent) return;
+    if (pendingDocs.length === 0) {
+      showAlert("Please select at least one document to mark as pending."); // Updated to use showAlert
+      return;
+    }
+
+    await updateStudentField(selectedStudent._id, {
+      docStatus: "Pendency",
+      pendingDocuments: pendingDocs,
+    });
+    closeDocModal();
+  };
+
+  const handleVerified = async () => {
+    if (!selectedStudent) return;
+
+    await updateStudentField(selectedStudent._id, {
+      docStatus: "Verified",
+      pendingDocuments: [],
+    });
+    closeDocModal();
+  };
+
+  const handleCheckboxChange = (doc: string, checked: boolean) => {
+    if (checked) {
+      setPendingDocs([...pendingDocs, doc]);
+    } else {
+      setPendingDocs(pendingDocs.filter((d) => d !== doc));
+    }
+  };
+
+  const handleStudentSelection = (studentId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedStudents([...selectedStudents, studentId]);
+    } else {
+      setSelectedStudents(selectedStudents.filter((id) => id !== studentId));
+    }
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedStudents(paginatedStudents.map((student) => student._id));
+    } else {
+      setSelectedStudents([]);
+    }
+  };
+
   const handleTotalApplicationsClick = () => {
     setActiveFilter("All");
   };
@@ -435,6 +580,27 @@ const Allstudents: React.FC = () => {
                 <option value="Jan-2024">Jan-2024</option>
               </select>
             </div>
+            <div>
+              <select
+                value={universityFilter}
+                onChange={(e) => setUniversityFilter(e.target.value)}
+                className="p-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-[11px] bg-gray-50 transition-all duration-200"
+              >
+                <option value="All">University</option>
+                <option value="Mangalayatan University- Online">Mangalayatan University- Online</option>
+                <option value="Mangalayatan University- Distance">Mangalayatan University- Distance</option>
+                <option value="Subharti University">Subharti University</option>
+              </select>
+            </div>
+            <div>
+              <input
+                type="text"
+                placeholder="Search by center code..."
+                value={centerSearch}
+                onChange={(e) => setCenterSearch(e.target.value)}
+                className="p-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-[11px] bg-gray-50 transition-all duration-200"
+              />
+            </div>
           </div>
           <div className="flex items-center gap-3">
             <input
@@ -448,6 +614,13 @@ const Allstudents: React.FC = () => {
               className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white py-2 px-5 rounded-lg shadow-md hover:from-blue-600 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 text-[11px] font-semibold"
             >
               Processed On
+            </button>
+            <button
+              onClick={downloadSelectedDocuments}
+              className="p-2.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transform hover:scale-105 transition-all duration-200"
+              title="Download selected students' documents"
+            >
+              <FaDownload className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -505,6 +678,14 @@ const Allstudents: React.FC = () => {
         <table className="min-w-full">
           <thead className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white">
             <tr>
+              <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider">
+                <input
+                  type="checkbox"
+                  checked={selectedStudents.length === paginatedStudents.length && paginatedStudents.length > 0}
+                  onChange={(e) => handleSelectAll(e.target.checked)}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+              </th>
               <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider"></th>
               <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider">Application Status</th>
               <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider">Processed On</th>
@@ -538,6 +719,14 @@ const Allstudents: React.FC = () => {
                   index % 2 === 0 ? "bg-gray-50" : "bg-white"
                 } hover:bg-blue-50 hover:shadow-md`}
               >
+                <td className="px-4 py-3 text-[11px] text-gray-800">
+                  <input
+                    type="checkbox"
+                    checked={selectedStudents.includes(student._id)}
+                    onChange={(e) => handleStudentSelection(student._id, e.target.checked)}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                </td>
                 <td className="px-4 py-3 text-[11px] text-gray-800 flex space-x-2">
                   <button
                     onClick={() => downloadDocuments(student)}
@@ -556,7 +745,7 @@ const Allstudents: React.FC = () => {
                   {user?.role === "superadmin" ? (
                     <select
                       value={student.applicationStatus || "New"}
-                      onChange={(e) => updateStudentField(student._id, "applicationStatus", e.target.value)}
+                      onChange={(e) => updateStudentField(student._id, { applicationStatus: e.target.value })}
                       className={`p-1 rounded-md ${getApplicationStatusColor(student.applicationStatus)} focus:outline-none focus:ring-2 focus:ring-blue-400`}
                     >
                       <option value="New">New</option>
@@ -602,10 +791,10 @@ const Allstudents: React.FC = () => {
                   {student.enrollmentNumber || "N/A"}
                 </td>
                 <td
-                  className={`px-4 py-3 text-[11px] font-medium ${user?.role === "superadmin" ? "cursor-pointer text-blue-500 hover:text-blue-700" : "text-gray-800"}`}
+                  className={`px-4 py-3 text-[11px] font-medium cursor-pointer ${getDocStatusColor(student.docStatus)}`}
                   onClick={() => openDocModal(student)}
                 >
-                  Pending
+                  {student.docStatus || "Pending"}
                 </td>
                 <td className="px-4 py-3 text-[11px] text-gray-800 font-medium">{student.admissionType || "N/A"}</td>
                 <td className="px-4 py-3 text-[11px] text-gray-800 font-medium">{student.admissionSession || "N/A"}</td>
@@ -667,101 +856,87 @@ const Allstudents: React.FC = () => {
         </div>
       </div>
 
-      {/* Edit Modal for Fields (only for Processed On, Application Number, Enrollment Number) */}
+      {/* Edit Modal */}
       <EditModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onSave={() => updateStudentField(editField!.studentId, editField!.field, editValue)}
+        onSave={() => {
+          if (editField) {
+            updateStudentField(editField.studentId, { [editField.field]: editValue });
+            setIsModalOpen(false);
+          }
+        }}
         value={editValue}
         onChange={setEditValue}
         field={editField?.field}
       />
 
-      {/* Document Status Modal */}
+      {/* Document Modal for Superadmin */}
       {isDocModalOpen && selectedStudent && (
         <div className="fixed inset-0 flex items-center justify-center z-50">
-          <div
-            className="fixed inset-0 bg-black bg-opacity-75 backdrop-blur-sm"
-            onClick={closeDocModal}
-          ></div>
-          <div className="bg-white rounded-2xl shadow-lg p-5 w-full max-w-md max-h-[80vh] overflow-y-auto sm:w-11/12 md:w-3/4 lg:w-1/2 z-50 transition-all duration-300">
+          <div className="fixed inset-0 bg-black bg-opacity-75" onClick={closeDocModal}></div>
+          <div className="bg-white rounded-2xl shadow-lg p-5 w-full max-w-lg z-50">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-base font-semibold text-gray-800">Report Pendency</h2>
-              <button onClick={closeDocModal} className="text-gray-500 hover:text-gray-700 text-lg">
-                ✕
-              </button>
+              <h2 className="text-base font-semibold text-gray-800">Document Details - {selectedStudent.studentName}</h2>
+              <button onClick={closeDocModal} className="text-gray-500 hover:text-gray-700 text-lg">✕</button>
             </div>
-            <div className="space-y-2 mb-4">
-              <label className="flex items-center text-[11px] text-gray-700">
-                <input type="checkbox" className="mr-2 h-4 w-4 text-blue-500 border-gray-200 rounded focus:ring-blue-400" />
-                Photo
-              </label>
-              <label className="flex items-center text-[11px] text-gray-700">
-                <input type="checkbox" className="mr-2 h-4 w-4 text-blue-500 border-gray-200 rounded focus:ring-blue-400" />
-                Address ID Proof
-              </label>
-              <label className="flex items-center text-[11px] text-gray-700">
-                <input type="checkbox" className="mr-2 h-4 w-4 text-blue-500 border-gray-200 rounded focus:ring-blue-400" />
-                Student Signature
-              </label>
-              <label className="flex items-center text-[11px] text-gray-700">
-                <input type="checkbox" className="mr-2 h-4 w-4 text-blue-500 border-gray-200 rounded focus:ring-blue-400" />
-                High School
-              </label>
-              <label className="flex items-center text-[11px] text-gray-700">
-                <input type="checkbox" className="mr-2 h-4 w-4 text-blue-500 border-gray-200 rounded focus:ring-blue-400" />
-                Intermediate
-              </label>
-              <label className="flex items-center text-[11px] text-gray-700">
-                <input type="checkbox" className="mr-2 h-4 w-4 text-blue-500 border-gray-200 rounded focus:ring-blue-400" />
-                Graduation
-              </label>
-              <label className="flex items-center text-[11px] text-gray-700">
-                <input type="checkbox" className="mr-2 h-4 w-4 text-blue-500 border-gray-200 rounded focus:ring-blue-400" />
-                Other
-              </label>
-              <label className="flex items-center text-[11px] text-gray-700">
-                <input type="checkbox" className="mr-2 h-4 w-4 text-blue-500 border-gray-200 rounded focus:ring-blue-400" />
-                ABC and DEB ID Screenshot
-              </label>
-              <label className="flex items-center text-[11px] text-gray-700">
-                <input type="checkbox" className="mr-2 h-4 w-4 text-blue-500 border-gray-200 rounded focus:ring-blue-400" />
-                Other Document
-              </label>
-            </div>
-            <div className="mb-4">
-              <label className="block text-[11px] font-medium text-gray-600">Remark</label>
-              <textarea
-                className="w-full p-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-[11px] bg-gray-50 transition-all duration-200"
-                rows={3}
-                placeholder="Enter remarks..."
-              ></textarea>
-            </div>
-            <div className="pb-4">
-              <h3 className="text-[11px] font-medium text-gray-600 mb-2">Uploaded Docs:</h3>
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  selectedStudent.photo,
-                  selectedStudent.addressIdProof,
-                  selectedStudent.studentSignature,
-                  selectedStudent.highSchoolMarksheet,
-                  selectedStudent.intermediateMarksheet,
-                  selectedStudent.graduationMarksheet,
-                  selectedStudent.otherMarksheet,
-                  selectedStudent.abcDebScreenshot,
-                  selectedStudent.otherDocument,
-                ]
-                  .filter((doc) => doc)
-                  .map((doc, index) => (
-                    <img
-                      key={index}
-                      src={doc}
-                      alt="Document"
-                      className="w-full h-20 object-cover rounded-md cursor-pointer border border-gray-200 hover:border-blue-400 transition-all duration-200"
-                      onClick={() => openImageModal(doc!)}
+            <div className="space-y-3">
+              {[
+                { label: "Photo", url: selectedStudent.photo, field: "photo" },
+                { label: "Address ID Proof", url: selectedStudent.addressIdProof, field: "addressIdProof" },
+                { label: "Student Signature", url: selectedStudent.studentSignature, field: "studentSignature" },
+                { label: "High School Marksheet", url: selectedStudent.highSchoolMarksheet, field: "highSchoolMarksheet" },
+                { label: "Intermediate Marksheet", url: selectedStudent.intermediateMarksheet, field: "intermediateMarksheet" },
+                { label: "Graduation Marksheet", url: selectedStudent.graduationMarksheet, field: "graduationMarksheet" },
+                { label: "Other Marksheet", url: selectedStudent.otherMarksheet, field: "otherMarksheet" },
+                { label: "ABC DEB Screenshot", url: selectedStudent.abcDebScreenshot, field: "abcDebScreenshot" },
+                { label: "Other Document", url: selectedStudent.otherDocument, field: "otherDocument" },
+              ].map((doc, index) => (
+                <div key={index} className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={pendingDocs.includes(doc.field)}
+                      onChange={(e) => handleCheckboxChange(doc.field, e.target.checked)}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                     />
-                  ))}
+                    <span className="text-[11px] text-gray-800">{doc.label}:</span>
+                  </div>
+                  {doc.url ? (
+                    <img
+                      src={doc.url}
+                      alt={doc.label}
+                      className="w-10 h-10 object-cover rounded border border-gray-200 cursor-pointer hover:border-blue-400 transition-all duration-200"
+                      onClick={() => openImageModal(doc.url!)}
+                    />
+                  ) : (
+                    <span className="text-[11px] text-gray-500">Not Uploaded</span>
+                  )}
+                </div>
+              ))}
+              <div className="mt-4">
+                <label className="text-[11px] text-gray-800">Remarks:</label>
+                <textarea
+                  value={remark}
+                  onChange={(e) => setRemark(e.target.value)}
+                  className="w-full p-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-[11px] bg-gray-50 mt-1"
+                  rows={3}
+                />
               </div>
+            </div>
+            <div className="flex justify-between mt-6">
+              <button
+                onClick={handlePendency}
+                className="bg-red-500 text-white py-2 px-5 rounded-lg hover:bg-red-600 transition-all duration-200"
+              >
+                Pendency
+              </button>
+              <button
+                onClick={handleVerified}
+                className="bg-green-500 text-white py-2 px-5 rounded-lg hover:bg-green-600 transition-all duration-200"
+              >
+                Verified
+              </button>
             </div>
           </div>
         </div>
@@ -770,46 +945,47 @@ const Allstudents: React.FC = () => {
       {/* Image Modal */}
       {isImageModalOpen && selectedImage && (
         <div className="fixed inset-0 flex items-center justify-center z-50">
-          <div
-            className="fixed inset-0 bg-black bg-opacity-75 backdrop-blur-sm"
-            onClick={closeImageModal}
-          ></div>
-          <div className="bg-white rounded-2xl shadow-lg p-5 max-w-3xl w-full z-50 transition-all duration-300">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-base font-semibold text-gray-800">{imageList.length > 1 ? "Document Preview" : "Photo Preview"}</h2>
-              <button onClick={closeImageModal} className="text-gray-500 hover:text-gray-700 text-lg">
-                ✕
-              </button>
-            </div>
-            <div className="relative">
-              <img
-                src={selectedImage}
-                alt="Preview"
-                className="w-full max-h-[80vh] object-contain rounded-lg"
-              />
-              {imageList.length > 1 && currentImageIndex > 0 && (
+          <div className="fixed inset-0 bg-black bg-opacity-75" onClick={closeImageModal}></div>
+          <div className="relative z-50">
+            <button
+              onClick={closeImageModal}
+              className="absolute top-2 right-2 text-white text-2xl bg-gray-800 rounded-full w-8 h-8 flex items-center justify-center hover:bg-gray-700 transition-all duration-200"
+            >
+              ✕
+            </button>
+            <img
+              src={selectedImage}
+              alt="Document"
+              className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg shadow-lg"
+            />
+            {imageList.length > 1 && (
+              <div className="absolute top-1/2 left-0 right-0 flex justify-between px-4">
                 <button
                   onClick={() => {
-                    setCurrentImageIndex((prev) => prev - 1);
-                    setSelectedImage(imageList[currentImageIndex - 1]);
+                    if (currentImageIndex > 0) {
+                      setCurrentImageIndex(currentImageIndex - 1);
+                      setSelectedImage(imageList[currentImageIndex - 1]);
+                    }
                   }}
-                  className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-gray-800 text-white p-2 rounded-full hover:bg-gray-700 transition-all duration-200"
+                  disabled={currentImageIndex === 0}
+                  className="text-white text-2xl bg-gray-800 rounded-full w-8 h-8 flex items-center justify-center hover:bg-gray-700 transition-all duration-200 disabled:opacity-50"
                 >
                   ←
                 </button>
-              )}
-              {imageList.length > 1 && currentImageIndex < imageList.length - 1 && (
                 <button
                   onClick={() => {
-                    setCurrentImageIndex((prev) => prev + 1);
-                    setSelectedImage(imageList[currentImageIndex + 1]);
+                    if (currentImageIndex < imageList.length - 1) {
+                      setCurrentImageIndex(currentImageIndex + 1);
+                      setSelectedImage(imageList[currentImageIndex + 1]);
+                    }
                   }}
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-gray-800 text-white p-2 rounded-full hover:bg-gray-700 transition-all duration-200"
+                  disabled={currentImageIndex === imageList.length - 1}
+                  className="text-white text-2xl bg-gray-800 rounded-full w-8 h-8 flex items-center justify-center hover:bg-gray-700 transition-all duration-200 disabled:opacity-50"
                 >
                   →
                 </button>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
       )}

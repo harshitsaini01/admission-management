@@ -127,72 +127,83 @@ const OfflinePayments: React.FC = () => {
   if (payments.length === 0) return <Placeholder type="empty" message="No payments found." />;
 
   return (
-    <div className="min-h-screen bg-gray-100 p-4">
-      <h1 className="text-2xl font-bold mb-6 text-center">Offline Payments</h1>
-      <div className="bg-white rounded-lg shadow-md overflow-x-auto">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-gray-100 to-blue-100 p-6">
+      <h1 className="text-xl font-semibold text-gray-800 mb-6 text-center">Offline Payments</h1>
+      <div className="bg-white rounded-2xl shadow-lg overflow-x-auto transition-all duration-300 hover:shadow-xl">
         <table className="min-w-full">
-          <thead className="bg-gray-200">
+          <thead className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white">
             <tr>
-              <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase">File</th>
-              <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase">Payment Type</th>
-              <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase">Transaction ID</th>
-              <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase">Amount</th>
-              <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase">Txn Date</th>
-              <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase">Acc Holder</th>
-              <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase">Beneficiary</th>
-              <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase">Center</th>
-              <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase">Center Code</th>
-              <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase">Added On</th>
-              <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase">Status</th>
-              <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 uppercase">Fee</th>
+              <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider">File</th>
+              <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider">Payment Type</th>
+              <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider">Transaction ID</th>
+              <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider">Amount</th>
+              <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider">Txn Date</th>
+              <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider">Acc Holder</th>
+              <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider">Beneficiary</th>
+              <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider">Center</th>
+              <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider">Center Code</th>
+              <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider">Added On</th>
+              <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider">Status</th>
+              <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider">Fee</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {payments.map((payment) => (
-              <tr key={payment._id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 text-sm text-gray-700">
+            {payments.map((payment, index) => (
+              <tr
+                key={payment._id}
+                className={`transition-all duration-200 ${
+                  index % 2 === 0 ? "bg-gray-50" : "bg-white"
+                } hover:bg-blue-50 hover:shadow-md`}
+              >
+                <td className="px-4 py-3 text-[11px] text-gray-800">
                   {payment.paySlip ? (
                     <a href={`${API_URL}/uploads/${payment.paySlip}`} target="_blank" rel="noopener noreferrer">
                       <img
                         src={`${API_URL}/uploads/${payment.paySlip}`}
                         alt="Pay Slip"
-                        className="w-10 h-10 object-cover"
+                        className="w-10 h-10 object-cover rounded border border-gray-200 cursor-pointer hover:border-blue-400 transition-all duration-200"
                       />
                     </a>
                   ) : (
-                    "--"
+                    <span className="text-gray-500">--</span>
                   )}
                 </td>
-                <td className="px-6 py-4 text-sm text-gray-700">{payment.paymentType || "--"}</td>
-                <td className="px-6 py-4 text-sm text-gray-700">{payment.transactionId}</td>
-                <td className="px-6 py-4 text-sm text-gray-700">{payment.amount}</td>
-                <td className="px-6 py-4 text-sm text-gray-700">
+                <td className="px-4 py-3 text-[11px] text-gray-800 font-medium">
+                  {payment.paymentType || <span className="text-gray-500">--</span>}
+                </td>
+                <td className="px-4 py-3 text-[11px] text-gray-800 font-medium">{payment.transactionId}</td>
+                <td className="px-4 py-3 text-[11px] text-gray-800 font-medium">{payment.amount}</td>
+                <td className="px-4 py-3 text-[11px] text-gray-800 font-medium">
                   {new Date(payment.transactionDate).toLocaleDateString()}
                 </td>
-                <td className="px-6 py-4 text-sm text-gray-700">{payment.accountHolderName || "--"}</td>
-                <td className="px-6 py-4 text-sm text-gray-700">{payment.beneficiary}</td>
-                <td className="px-6 py-4 text-sm text-gray-700">{payment.centerName}</td>
-                <td className="px-6 py-4 text-sm text-gray-700">{payment.centerCode}</td>
-                <td className="px-6 py-4 text-sm text-gray-700">
+                <td className="px-4 py-3 text-[11px] text-gray-800 font-medium">
+                  {payment.accountHolderName || <span className="text-gray-500">--</span>}
+                </td>
+                <td className="px-4 py-3 text-[11px] text-gray-800 font-medium">{payment.beneficiary}</td>
+                <td className="px-4 py-3 text-[11px] text-gray-800 font-medium">{payment.centerName}</td>
+                <td className="px-4 py-3 text-[11px] text-gray-800 font-medium">{payment.centerCode}</td>
+                <td className="px-4 py-3 text-[11px] text-gray-800 font-medium">
                   {new Date(payment.addedOn).toLocaleDateString()}
                 </td>
                 <td
-                  className="px-6 py-4 text-sm text-gray-700 cursor-pointer"
+                  className="px-4 py-3 text-[11px] font-medium cursor-pointer"
                   onClick={() => openEditModal(payment._id, payment.status)}
                 >
                   <span
                     className={`px-2 py-1 rounded ${
                       payment.status === "Approved"
-                        ? "bg-green-100 text-green-700"
+                        ? "bg-green-200 text-green-800"
                         : payment.status === "Rejected"
-                        ? "bg-red-100 text-red-700"
-                        : "bg-yellow-100 text-yellow-700"
+                        ? "bg-red-200 text-red-800"
+                        : "bg-yellow-200 text-yellow-800"
                     }`}
                   >
                     {payment.status}
                   </span>
                 </td>
-                <td className="px-6 py-4 text-sm text-gray-700">--</td>
+                <td className="px-4 py-3 text-[11px] text-gray-800 font-medium">
+                  <span className="text-gray-500">--</span>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -205,8 +216,8 @@ const OfflinePayments: React.FC = () => {
         onSave={updatePaymentStatus}
         value={editStatus}
         onChange={setEditStatus}
-         isDropdown={true} // Commented out previously
-         dropdownOptions={["Pending", "Approved", "Rejected"]} // Commented out to resolve the error
+        isDropdown={true}
+        dropdownOptions={["Pending", "Approved", "Rejected"]}
       />
     </div>
   );

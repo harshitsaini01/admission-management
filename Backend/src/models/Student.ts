@@ -1,15 +1,19 @@
+
+
+
+// Student.ts
 import mongoose, { Schema, Document } from "mongoose";
 
 interface IStudent extends Document {
-  center: string; // 4-digit code
-  centerId: string | mongoose.Types.ObjectId; // Reference to Center
-  centerName: string; // Added field for center name
+  center: string;
+  centerId: string | mongoose.Types.ObjectId;
+  centerName: string;
   admissionSession: string;
   admissionType: string;
   course: string;
   fatherName: string;
   studentName: string;
-  dob: Date; // Changed to Date to match schema
+  dob: Date;
   mobileNumber: string;
   apaarAbcId: string;
   religion: string;
@@ -59,14 +63,14 @@ interface IStudent extends Document {
   otherObtainedMarks?: number;
   otherMaximumMarks?: number;
   otherPercentage?: number;
-  university: string; // Added from frontend, required
-  photo: string; // Required per frontend
-  studentSignature: string; // Required per frontend
-  addressIdProof: string; // Required per frontend
+  university: string;
+  photo: string;
+  studentSignature: string;
+  addressIdProof: string;
   otherDocument?: string;
-  abcDebScreenshot: string; // Required per frontend
-  highSchoolMarksheet: string; // Required per frontend
-  intermediateMarksheet: string; // Required per frontend
+  abcDebScreenshot: string;
+  highSchoolMarksheet: string;
+  intermediateMarksheet: string;
   graduationMarksheet?: string;
   otherMarksheet?: string;
   applicationNumber?: string;
@@ -76,13 +80,15 @@ interface IStudent extends Document {
   applicationStatus?: string;
   referenceId: string;
   admDate: Date;
+  docStatus?: string; // New field for document status
+  pendingDocuments?: string[]; // New field for pending documents
 }
 
 const StudentSchema: Schema = new Schema(
   {
-    center: { type: String, required: true, maxlength: 4 }, // 4-digit code
+    center: { type: String, required: true, maxlength: 4 },
     centerId: { type: Schema.Types.ObjectId, ref: "Center", required: true },
-    centerName: { type: String, required: true }, // Added field
+    centerName: { type: String, required: true },
     admissionSession: { type: String, required: true },
     admissionType: { type: String, required: true },
     course: { type: String, required: true },
@@ -138,14 +144,14 @@ const StudentSchema: Schema = new Schema(
     otherObtainedMarks: { type: Number, required: false },
     otherMaximumMarks: { type: Number, required: false },
     otherPercentage: { type: Number, required: false },
-    university: { type: String, required: true }, // Added from frontend
-    photo: { type: String, required: true }, // Required per frontend
-    studentSignature: { type: String, required: true }, // Required per frontend
-    addressIdProof: { type: String, required: true }, // Required per frontend
+    university: { type: String, required: true },
+    photo: { type: String, required: true },
+    studentSignature: { type: String, required: true },
+    addressIdProof: { type: String, required: true },
     otherDocument: { type: String, required: false },
-    abcDebScreenshot: { type: String, required: true }, // Required per frontend
-    highSchoolMarksheet: { type: String, required: true }, // Required per frontend
-    intermediateMarksheet: { type: String, required: true }, // Required per frontend
+    abcDebScreenshot: { type: String, required: true },
+    highSchoolMarksheet: { type: String, required: true },
+    intermediateMarksheet: { type: String, required: true },
     graduationMarksheet: { type: String, required: false },
     otherMarksheet: { type: String, required: false },
     applicationNumber: { type: String, required: false },
@@ -155,6 +161,8 @@ const StudentSchema: Schema = new Schema(
     applicationStatus: { type: String, default: "New" },
     referenceId: { type: String, required: true, unique: true },
     admDate: { type: Date, required: true, default: Date.now },
+    docStatus: { type: String, default: "Pending" }, // New field
+    pendingDocuments: { type: [String], default: [] }, // New field
   },
   { timestamps: true }
 );

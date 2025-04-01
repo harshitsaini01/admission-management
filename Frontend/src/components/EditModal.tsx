@@ -34,8 +34,8 @@ const EditModal: React.FC<EditModalProps> = ({
     <div className="fixed inset-0 flex items-center justify-center z-50">
       {/* Background Overlay */}
       <div
-        className="fixed inset-0 bg-black bg-opacity-75 backdrop-blur-sm"
-        onClick={onClose}
+              className="fixed inset-0 bg-transperent bg-opacity-75 backdrop-blur-sm transition-opacity duration-300"
+              onClick={onClose}
       ></div>
 
       {/* Modal Content */}

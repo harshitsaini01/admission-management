@@ -86,14 +86,14 @@ const Sidebar: React.FC = () => {
             ref={dropdownRef}
           >
             <ul className="divide-y divide-gray-700">
-              <li>
+              {/* <li>
                 <a
                   href="/myprofile"
                   className="block px-4 py-2 hover:bg-gray-700 hover:text-gray-200 rounded-t-lg transition-colors duration-200"
                 >
                   My Profile
                 </a>
-              </li>
+              </li> */}
               <li>
                 <button
                   onClick={logout}
