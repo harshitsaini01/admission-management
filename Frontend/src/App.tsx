@@ -17,7 +17,7 @@ const App: React.FC = () => {
   return (
     <Router>
       <AuthProvider>
-        <AlertProvider> {/* Add the AlertProvider here */}
+        <AlertProvider> 
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route

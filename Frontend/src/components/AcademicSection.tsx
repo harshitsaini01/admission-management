@@ -35,6 +35,13 @@ const AcademicSection: React.FC<AcademicSectionProps> = ({
     }
   };
 
+  // Generate years from 2000 to current year
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: currentYear - 1980 + 1 }, (_, i) => {
+    const year = (1980 + i).toString();
+    return { value: year, label: year };
+  });
+
   const baseName = getFieldNameBase(title);
 
   return (
@@ -51,16 +58,12 @@ const AcademicSection: React.FC<AcademicSectionProps> = ({
         required={required}
       />
       <InputField
-        label={required ? "Year*" : "Year"}
+        label={required ? "Year" : "Year"}
         name={`${baseName}Year`}
         value={formData[`${baseName}Year`]}
         onChange={onChange}
         type="select"
-        options={[
-          { value: "2020", label: "2020" },
-          { value: "2021", label: "2021" },
-          { value: "2022", label: "2022" },
-        ]}
+        options={years}
         placeholder="Select Year"
         required={required}
       />
