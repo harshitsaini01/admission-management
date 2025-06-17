@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import toast from 'react-hot-toast';
 import {
-  CreditCardIcon,
+  BookOpenIcon,
   MagnifyingGlassIcon,
   ArrowDownTrayIcon,
   EyeIcon,
@@ -12,7 +12,10 @@ import {
   CurrencyRupeeIcon,
   SparklesIcon,
   FunnelIcon,
-  PhotoIcon
+  PhotoIcon,
+  CalendarDaysIcon,
+  BuildingOfficeIcon,
+  CreditCardIcon
 } from "@heroicons/react/24/outline";
 
 // Define the User type locally to include the token property
@@ -22,7 +25,7 @@ interface User {
   token?: string;
 }
 
-type PaymentData = {
+type TransactionData = {
   _id: string;
   transactionId: string;
   amount: number;
@@ -36,43 +39,54 @@ type PaymentData = {
   fee: number;
   paySlip?: string;
   createdAt: string;
+  type: 'offline' | 'online'; // To distinguish transaction types
 };
 
 interface FilterState {
   status: 'all' | 'pending' | 'approved' | 'rejected';
-  paymentType: 'all' | 'UPI' | 'Online' | 'Bank Transfer' | 'Cash';
-  beneficiary: 'all' | 'Private' | 'University';
+  paymentType: 'all' | 'UPI' | 'Online' | 'Bank Transfer' | 'Cash' | 'Initial Balance';
+  beneficiary: 'all' | 'Private' | 'University' | 'Registration';
+  transactionType: 'all' | 'offline' | 'online' | 'registration';
   search: string;
   dateRange: string;
+  centerCode: string;
 }
 
-const OfflinePayments: React.FC = () => {
+interface Center {
+  _id: string;
+  code: string;
+  name: string;
+  university: string;
+  walletBalance: number;
+}
+
+const Passbook: React.FC = () => {
   const { user, checkAuth } = useAuth() as { user: User | null; checkAuth: () => Promise<void> };
-  const [payments, setPayments] = useState<PaymentData[]>([]);
-  const [filteredPayments, setFilteredPayments] = useState<PaymentData[]>([]);
+  const [transactions, setTransactions] = useState<TransactionData[]>([]);
+  const [filteredTransactions, setFilteredTransactions] = useState<TransactionData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editPaymentId, setEditPaymentId] = useState<string | null>(null);
-  const [editStatus, setEditStatus] = useState<string>("");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [centers, setCenters] = useState<Center[]>([]);
   const [filters, setFilters] = useState<FilterState>({
     status: 'all',
     paymentType: 'all',
     beneficiary: 'all',
+    transactionType: 'all',
     search: '',
-    dateRange: 'all'
+    dateRange: 'all',
+    centerCode: 'all'
   });
 
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
   useEffect(() => {
-    const fetchPayments = async () => {
+    const fetchData = async () => {
       if (!user) {
         await checkAuth();
         if (!user) {
-          setError("You must be logged in to view payments");
+          setError("You must be logged in to view passbook");
           setLoading(false);
           return;
         }
@@ -80,12 +94,14 @@ const OfflinePayments: React.FC = () => {
 
       setLoading(true);
       setError(null);
+      
       try {
-        const url = user.role === "admin"
+        // Fetch offline payments
+        const offlineUrl = user.role === "admin"
           ? `${API_URL}/api/wallet/recharge?centerId=${user.centerId}`
           : `${API_URL}/api/wallet/recharge`;
         
-        const response = await fetch(url, {
+        const offlineResponse = await fetch(offlineUrl, {
           credentials: "include",
           headers: {
             "Content-Type": "application/json",
@@ -93,16 +109,39 @@ const OfflinePayments: React.FC = () => {
           },
         });
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || "Failed to fetch payments");
+        let offlineData: TransactionData[] = [];
+        if (offlineResponse.ok) {
+          const rawOfflineData: TransactionData[] = await offlineResponse.json();
+          offlineData = rawOfflineData.map((item: TransactionData) => ({
+            ...item,
+            type: 'offline' as const
+          }));
         }
 
-        const data: PaymentData[] = await response.json();
-        setPayments(data);
-        setFilteredPayments(data);
+        // For superadmin, also fetch centers list
+        if (user.role === "superadmin") {
+          const centersResponse = await fetch(`${API_URL}/api/wallet/centers`, {
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${user?.token}`,
+            },
+          });
+
+          if (centersResponse.ok) {
+            const centersData = await centersResponse.json();
+            setCenters(centersData);
+          }
+        }
+
+        // TODO: Add online transactions when available
+        // const onlineData = await fetchOnlineTransactions();
+
+        const allTransactions = [...offlineData];
+        setTransactions(allTransactions);
+        setFilteredTransactions(allTransactions);
       } catch (err: unknown) {
-        const errorMessage = err instanceof Error ? err.message : "Error fetching payments";
+        const errorMessage = err instanceof Error ? err.message : "Error fetching passbook data";
         setError(errorMessage);
         toast.error(errorMessage);
       } finally {
@@ -110,36 +149,50 @@ const OfflinePayments: React.FC = () => {
       }
     };
 
-    fetchPayments();
+    fetchData();
   }, [user, checkAuth]);
 
-  // Filter payments based on search and filters
+  // Filter transactions based on search and filters
   useEffect(() => {
-    let filtered = payments;
+    let filtered = transactions;
 
     // Search filter
     if (filters.search) {
-      filtered = filtered.filter(payment =>
-        payment.transactionId.toLowerCase().includes(filters.search.toLowerCase()) ||
-        payment.centerName.toLowerCase().includes(filters.search.toLowerCase()) ||
-        payment.centerCode.toLowerCase().includes(filters.search.toLowerCase()) ||
-        payment.accountHolderName?.toLowerCase().includes(filters.search.toLowerCase())
+      filtered = filtered.filter(transaction =>
+        transaction.transactionId.toLowerCase().includes(filters.search.toLowerCase()) ||
+        transaction.centerName.toLowerCase().includes(filters.search.toLowerCase()) ||
+        transaction.centerCode.toLowerCase().includes(filters.search.toLowerCase()) ||
+        transaction.accountHolderName?.toLowerCase().includes(filters.search.toLowerCase())
       );
     }
 
     // Status filter
     if (filters.status !== 'all') {
-      filtered = filtered.filter(payment => payment.status.toLowerCase() === filters.status);
+      filtered = filtered.filter(transaction => transaction.status.toLowerCase() === filters.status);
     }
 
     // Payment type filter
     if (filters.paymentType !== 'all') {
-      filtered = filtered.filter(payment => payment.paymentType === filters.paymentType);
+      filtered = filtered.filter(transaction => transaction.paymentType === filters.paymentType);
     }
 
     // Beneficiary filter
     if (filters.beneficiary !== 'all') {
-      filtered = filtered.filter(payment => payment.beneficiary === filters.beneficiary);
+      filtered = filtered.filter(transaction => transaction.beneficiary === filters.beneficiary);
+    }
+
+    // Transaction type filter
+    if (filters.transactionType !== 'all') {
+      if (filters.transactionType === 'registration') {
+        filtered = filtered.filter(transaction => transaction.paymentType === 'Initial Balance');
+      } else {
+        filtered = filtered.filter(transaction => transaction.type === filters.transactionType && transaction.paymentType !== 'Initial Balance');
+      }
+    }
+
+    // Center filter (for superadmin)
+    if (filters.centerCode !== 'all') {
+      filtered = filtered.filter(transaction => transaction.centerCode === filters.centerCode);
     }
 
     // Date range filter
@@ -159,58 +212,13 @@ const OfflinePayments: React.FC = () => {
           break;
       }
       
-      filtered = filtered.filter(payment => 
-        new Date(payment.createdAt) >= filterDate
+      filtered = filtered.filter(transaction => 
+        new Date(transaction.createdAt) >= filterDate
       );
     }
 
-    setFilteredPayments(filtered);
-  }, [payments, filters]);
-
-  const updatePaymentStatus = async (paymentId: string, newStatus: string) => {
-    const loadingToast = toast.loading('Updating payment status...');
-    try {
-      // Capitalize the status to match backend expectations
-      const capitalizedStatus = newStatus.charAt(0).toUpperCase() + newStatus.slice(1).toLowerCase();
-      
-      const response = await fetch(`${API_URL}/api/wallet/recharge/${paymentId}/status`, {
-        method: "PATCH",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${user?.token}`,
-        },
-        body: JSON.stringify({ status: capitalizedStatus }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to update payment status");
-      }
-
-      const updatedPayment = await response.json();
-      setPayments(payments.map(payment => 
-        payment._id === paymentId ? { ...payment, status: updatedPayment.data.status } : payment
-      ));
-      
-      toast.dismiss(loadingToast);
-      toast.success(`Payment ${newStatus.toLowerCase()} successfully`);
-      setIsModalOpen(false);
-      setEditPaymentId(null);
-      setEditStatus("");
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : "Error updating payment status";
-      toast.dismiss(loadingToast);
-      toast.error(errorMessage);
-      setError(errorMessage);
-    }
-  };
-
-  const openEditModal = (paymentId: string, currentStatus: string) => {
-    setEditPaymentId(paymentId);
-    setEditStatus(currentStatus);
-    setIsModalOpen(true);
-  };
+    setFilteredTransactions(filtered);
+  }, [transactions, filters]);
 
   const openImageModal = (imageUrl: string) => {
     setSelectedImage(imageUrl);
@@ -230,29 +238,54 @@ const OfflinePayments: React.FC = () => {
     }
   };
 
-  const getStats = () => {
-    const total = payments.length;
-    const pending = payments.filter(p => p.status.toLowerCase() === 'pending').length;
-    const approved = payments.filter(p => p.status.toLowerCase() === 'approved').length;
-    const rejected = payments.filter(p => p.status.toLowerCase() === 'rejected').length;
-    const totalAmount = payments.reduce((sum, p) => sum + p.amount, 0);
+  const getTypeColor = (type: string, paymentType?: string) => {
+    if (paymentType === "Initial Balance") {
+      return 'bg-purple-100 text-purple-800';
+    }
+    switch (type) {
+      case 'offline':
+        return 'bg-blue-100 text-blue-800';
+      case 'online':
+        return 'bg-green-100 text-green-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
 
-    return { total, pending, approved, rejected, totalAmount };
+  const getTransactionTypeLabel = (paymentType?: string) => {
+    if (paymentType === "Initial Balance") {
+      return "Registration";
+    }
+    return "Offline";
+  };
+
+  const getStats = () => {
+    const total = transactions.length;
+    const pending = transactions.filter(t => t.status.toLowerCase() === 'pending').length;
+    const approved = transactions.filter(t => t.status.toLowerCase() === 'approved').length;
+    const rejected = transactions.filter(t => t.status.toLowerCase() === 'rejected').length;
+    const totalAmount = transactions.reduce((sum, t) => sum + t.amount, 0);
+    const offline = transactions.filter(t => t.type === 'offline' && t.paymentType !== 'Initial Balance').length;
+    const online = transactions.filter(t => t.type === 'online').length;
+    const registration = transactions.filter(t => t.paymentType === 'Initial Balance').length;
+
+    return { total, pending, approved, rejected, totalAmount, offline, online, registration };
   };
 
   const exportToCSV = () => {
-    const headers = ['Transaction ID', 'Amount', 'Payment Type', 'Account Holder', 'Beneficiary', 'Center', 'Status', 'Transaction Date'];
+    const headers = ['Date', 'Transaction ID', 'Type', 'Amount', 'Payment Type', 'Account Holder', 'Beneficiary', 'Center', 'Status'];
     const csvContent = [
       headers.join(','),
-      ...filteredPayments.map(payment => [
-        payment.transactionId,
-        payment.amount,
-        payment.paymentType || '',
-        payment.accountHolderName || '',
-        payment.beneficiary,
-        payment.centerName,
-        payment.status,
-        new Date(payment.transactionDate).toLocaleDateString()
+      ...filteredTransactions.map(transaction => [
+        new Date(transaction.transactionDate).toLocaleDateString(),
+        transaction.transactionId,
+        transaction.type,
+        transaction.amount,
+        transaction.paymentType || '',
+        transaction.accountHolderName || '',
+        transaction.beneficiary,
+        `${transaction.centerCode} - ${transaction.centerName}`,
+        transaction.status
       ].join(','))
     ].join('\n');
 
@@ -260,12 +293,12 @@ const OfflinePayments: React.FC = () => {
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
-    link.setAttribute('download', `offline_payments_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', `passbook_${new Date().toISOString().split('T')[0]}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    toast.success('Payment data exported successfully!');
+    toast.success('Passbook data exported successfully!');
   };
 
   const stats = getStats();
@@ -275,8 +308,8 @@ const OfflinePayments: React.FC = () => {
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6 flex items-center justify-center">
         <div className="text-center">
           <div className="spinner mx-auto mb-4"></div>
-          <h1 className="text-2xl font-bold mb-2 text-gray-900">Loading Payments</h1>
-          <p className="text-gray-600">Please wait while we fetch the payment data...</p>
+          <h1 className="text-2xl font-bold mb-2 text-gray-900">Loading Passbook</h1>
+          <p className="text-gray-600">Please wait while we fetch your transaction history...</p>
         </div>
       </div>
     );
@@ -288,7 +321,7 @@ const OfflinePayments: React.FC = () => {
         <div className="card max-w-md w-full">
           <div className="card-body text-center">
             <XCircleIcon className="w-12 h-12 text-red-500 mx-auto mb-4" />
-            <h1 className="text-2xl font-bold mb-3 text-gray-900">Error Loading Payments</h1>
+            <h1 className="text-2xl font-bold mb-3 text-gray-900">Error Loading Passbook</h1>
             <div className="alert alert-error">{error}</div>
           </div>
         </div>
@@ -302,18 +335,25 @@ const OfflinePayments: React.FC = () => {
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
-            <SparklesIcon className="w-8 h-8 text-blue-600 mr-3" />
-            <h1 className="text-4xl font-bold text-gray-900">Offline Payments</h1>
+            <BookOpenIcon className="w-8 h-8 text-blue-600 mr-3" />
+            <h1 className="text-4xl font-bold text-gray-900">
+              {user?.role === "superadmin" ? "Complete Passbook" : "My Passbook"}
+            </h1>
           </div>
-          <p className="text-gray-600 text-lg">Manage and monitor all offline payment transactions</p>
+          <p className="text-gray-600 text-lg">
+            {user?.role === "superadmin" 
+              ? "Complete transaction history across all centers" 
+              : "Your complete transaction history and wallet activity"
+            }
+          </p>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-8 gap-6 mb-8">
           <div className="stats-card">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-white/80 text-sm">Total Payments</p>
+                <p className="text-white/80 text-sm">Total Transactions</p>
                 <p className="text-3xl font-bold text-white">{stats.total}</p>
               </div>
               <CreditCardIcon className="w-8 h-8 text-white/60" />
@@ -355,6 +395,33 @@ const OfflinePayments: React.FC = () => {
               <CurrencyRupeeIcon className="w-8 h-8 text-white/60" />
             </div>
           </div>
+          <div className="stats-card" style={{background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)'}}>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-white/80 text-sm">Offline</p>
+                <p className="text-3xl font-bold text-white">{stats.offline}</p>
+              </div>
+              <BuildingOfficeIcon className="w-8 h-8 text-white/60" />
+            </div>
+          </div>
+          <div className="stats-card" style={{background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)'}}>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-white/80 text-sm">Online</p>
+                <p className="text-3xl font-bold text-white">{stats.online}</p>
+              </div>
+              <SparklesIcon className="w-8 h-8 text-white/60" />
+            </div>
+          </div>
+          <div className="stats-card" style={{background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)'}}>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-white/80 text-sm">Registration</p>
+                <p className="text-3xl font-bold text-white">{stats.registration}</p>
+              </div>
+              <SparklesIcon className="w-8 h-8 text-white/60" />
+            </div>
+          </div>
         </div>
 
         {/* Filters and Search */}
@@ -376,7 +443,7 @@ const OfflinePayments: React.FC = () => {
                 <button
                   onClick={exportToCSV}
                   className="btn btn-secondary"
-                  disabled={filteredPayments.length === 0}
+                  disabled={filteredTransactions.length === 0}
                 >
                   <ArrowDownTrayIcon className="w-4 h-4" />
                   Export CSV
@@ -384,7 +451,7 @@ const OfflinePayments: React.FC = () => {
               </div>
 
               {/* Filters Section */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
                   <select
@@ -400,17 +467,32 @@ const OfflinePayments: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Payment Type</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
+                  <select
+                    value={filters.transactionType}
+                    onChange={(e) => setFilters(prev => ({ ...prev, transactionType: e.target.value as FilterState['transactionType'] }))}
+                    className="form-select w-full"
+                  >
+                    <option value="all">All Types</option>
+                    <option value="offline">Offline</option>
+                    <option value="online">Online</option>
+                    <option value="registration">Registration</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
                   <select
                     value={filters.paymentType}
                     onChange={(e) => setFilters(prev => ({ ...prev, paymentType: e.target.value as FilterState['paymentType'] }))}
                     className="form-select w-full"
                   >
-                    <option value="all">All Types</option>
+                    <option value="all">All Methods</option>
                     <option value="UPI">UPI</option>
                     <option value="Online">Online</option>
                     <option value="Bank Transfer">Bank Transfer</option>
                     <option value="Cash">Cash</option>
+                    <option value="Initial Balance">Initial Balance</option>
                   </select>
                 </div>
 
@@ -424,8 +506,27 @@ const OfflinePayments: React.FC = () => {
                     <option value="all">All Beneficiaries</option>
                     <option value="Private">Private</option>
                     <option value="University">University</option>
+                    <option value="Registration">Registration</option>
                   </select>
                 </div>
+
+                {user?.role === "superadmin" && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Center</label>
+                    <select
+                      value={filters.centerCode}
+                      onChange={(e) => setFilters(prev => ({ ...prev, centerCode: e.target.value }))}
+                      className="form-select w-full"
+                    >
+                      <option value="all">All Centers</option>
+                      {centers.map(center => (
+                        <option key={center._id} value={center.code}>
+                          {center.code} - {center.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
@@ -447,8 +548,10 @@ const OfflinePayments: React.FC = () => {
                       status: 'all',
                       paymentType: 'all',
                       beneficiary: 'all',
+                      transactionType: 'all',
                       search: '',
-                      dateRange: 'all'
+                      dateRange: 'all',
+                      centerCode: 'all'
                     })}
                     className="btn btn-secondary w-full"
                   >
@@ -461,7 +564,7 @@ const OfflinePayments: React.FC = () => {
           </div>
         </div>
 
-        {/* Payments Table */}
+        {/* Transactions Table */}
         <div className="card">
           <div className="overflow-x-auto">
             <table className="table">
@@ -469,35 +572,34 @@ const OfflinePayments: React.FC = () => {
                 <tr>
                   <th>Receipt</th>
                   <th>Transaction Details</th>
-                  <th>Payment Info</th>
+                  <th>Type & Method</th>
                   <th>Center Details</th>
                   <th>Amount & Fee</th>
                   <th>Status</th>
                   <th>Dates</th>
-                  {user?.role === "superadmin" && <th>Actions</th>}
                 </tr>
               </thead>
               <tbody>
-                {filteredPayments.map((payment) => (
-                  <tr key={payment._id}>
+                {filteredTransactions.map((transaction) => (
+                  <tr key={transaction._id}>
                     {/* Receipt */}
                     <td>
-                      {payment.paySlip && payment.paySlip !== "system-registration" ? (
+                      {transaction.paySlip && transaction.paySlip !== "system-registration" ? (
                         <div className="flex items-center space-x-2">
                           <img
-                            src={`${API_URL}/uploads/${payment.paySlip}`}
+                            src={`${API_URL}/uploads/${transaction.paySlip}`}
                             alt="Pay Slip"
                             className="w-12 h-12 object-cover rounded-lg border border-gray-200 cursor-pointer hover:border-blue-400 transition-all duration-200"
-                            onClick={() => openImageModal(`${API_URL}/uploads/${payment.paySlip}`)}
+                            onClick={() => openImageModal(`${API_URL}/uploads/${transaction.paySlip}`)}
                           />
                           <button
-                            onClick={() => openImageModal(`${API_URL}/uploads/${payment.paySlip}`)}
+                            onClick={() => openImageModal(`${API_URL}/uploads/${transaction.paySlip}`)}
                             className="text-blue-600 hover:text-blue-800 text-sm"
                           >
                             <EyeIcon className="w-4 h-4" />
                           </button>
                         </div>
-                      ) : payment.paymentType === "Initial Balance" ? (
+                      ) : transaction.paymentType === "Initial Balance" ? (
                         <div className="flex items-center justify-center w-12 h-12 bg-purple-100 rounded-lg">
                           <SparklesIcon className="w-6 h-6 text-purple-600" />
                         </div>
@@ -511,21 +613,24 @@ const OfflinePayments: React.FC = () => {
                     {/* Transaction Details */}
                     <td>
                       <div className="space-y-1">
-                        <div className="font-semibold text-gray-900">{payment.transactionId}</div>
+                        <div className="font-semibold text-gray-900">{transaction.transactionId}</div>
                         <div className="text-sm text-gray-500">
-                          {payment.accountHolderName || "N/A"}
+                          {transaction.accountHolderName || "N/A"}
                         </div>
                       </div>
                     </td>
 
-                    {/* Payment Info */}
+                    {/* Type & Method */}
                     <td>
-                      <div className="space-y-1">
-                        <div className="text-sm font-medium text-gray-900">
-                          {payment.paymentType || "N/A"}
+                      <div className="space-y-2">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getTypeColor(transaction.type, transaction.paymentType)}`}>
+                          {getTransactionTypeLabel(transaction.paymentType)}
+                        </span>
+                        <div className="text-sm text-gray-600">
+                          {transaction.paymentType || "N/A"}
                         </div>
-                        <div className="text-sm text-gray-500">
-                          {payment.beneficiary}
+                        <div className="text-xs text-gray-500">
+                          {transaction.beneficiary}
                         </div>
                       </div>
                     </td>
@@ -533,108 +638,55 @@ const OfflinePayments: React.FC = () => {
                     {/* Center Details */}
                     <td>
                       <div className="space-y-1">
-                        <div className="font-medium text-gray-900">{payment.centerName}</div>
-                        <div className="text-sm text-gray-500">Code: {payment.centerCode}</div>
+                        <div className="font-medium text-gray-900">{transaction.centerName}</div>
+                        <div className="text-sm text-gray-500">Code: {transaction.centerCode}</div>
                       </div>
                     </td>
 
                     {/* Amount & Fee */}
                     <td>
                       <div className="space-y-1">
-                        <div className="font-semibold text-green-600">₹{payment.amount.toLocaleString()}</div>
-                        <div className="text-sm text-gray-500">Fee: ₹{payment.fee}</div>
+                        <div className="font-semibold text-green-600">₹{transaction.amount.toLocaleString()}</div>
+                        <div className="text-sm text-gray-500">Fee: ₹{transaction.fee}</div>
                       </div>
                     </td>
 
                     {/* Status */}
                     <td>
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(payment.status)}`}>
-                        {payment.status}
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(transaction.status)}`}>
+                        {transaction.status}
                       </span>
                     </td>
 
                     {/* Dates */}
                     <td>
                       <div className="space-y-1">
-                        <div className="text-sm text-gray-900">
-                          Txn: {new Date(payment.transactionDate).toLocaleDateString()}
+                        <div className="text-sm text-gray-900 flex items-center">
+                          <CalendarDaysIcon className="w-4 h-4 mr-1 text-gray-400" />
+                          {new Date(transaction.transactionDate).toLocaleDateString()}
                         </div>
                         <div className="text-sm text-gray-500">
-                          Added: {payment.createdAt && !isNaN(new Date(payment.createdAt).getTime()) 
-                            ? new Date(payment.createdAt).toLocaleDateString() 
+                          Added: {transaction.createdAt && !isNaN(new Date(transaction.createdAt).getTime()) 
+                            ? new Date(transaction.createdAt).toLocaleDateString() 
                             : "N/A"}
                         </div>
                       </div>
                     </td>
-
-                    {/* Actions */}
-                    {user?.role === "superadmin" && (
-                      <td>
-                        <button
-                          onClick={() => openEditModal(payment._id, payment.status)}
-                          className="btn btn-sm btn-secondary"
-                        >
-                          Edit Status
-                        </button>
-                      </td>
-                    )}
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
 
-          {filteredPayments.length === 0 && (
+          {filteredTransactions.length === 0 && (
             <div className="text-center py-12">
-              <CreditCardIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No payments found</h3>
+              <BookOpenIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No transactions found</h3>
               <p className="text-gray-500">Try adjusting your search or filter criteria.</p>
             </div>
           )}
         </div>
       </div>
-
-      {/* Edit Status Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 flex items-center justify-center z-50">
-          <div className="fixed inset-0 bg-black bg-opacity-50" onClick={() => setIsModalOpen(false)}></div>
-          <div className="card max-w-md w-full z-50">
-            <div className="card-header">
-              <h3 className="text-lg font-bold text-gray-900">Update Payment Status</h3>
-            </div>
-            <div className="card-body">
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
-                  <select
-                    value={editStatus}
-                    onChange={(e) => setEditStatus(e.target.value)}
-                    className="form-select w-full"
-                  >
-                    <option value="Pending">Pending</option>
-                    <option value="Approved">Approved</option>
-                    <option value="Rejected">Rejected</option>
-                  </select>
-                </div>
-              </div>
-              <div className="flex justify-end space-x-3 mt-6">
-                <button
-                  onClick={() => setIsModalOpen(false)}
-                  className="btn btn-secondary"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => editPaymentId && updatePaymentStatus(editPaymentId, editStatus)}
-                  className="btn btn-primary"
-                >
-                  Update Status
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Image Modal */}
       {isImageModalOpen && selectedImage && (
@@ -659,4 +711,4 @@ const OfflinePayments: React.FC = () => {
   );
 };
 
-export default OfflinePayments;
+export default Passbook; 

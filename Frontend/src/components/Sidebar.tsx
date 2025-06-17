@@ -1,6 +1,21 @@
 import { useState, useRef, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import {
+  HomeIcon,
+  BuildingOfficeIcon,
+  UserGroupIcon,
+  DocumentTextIcon,
+  CreditCardIcon,
+  PlusIcon,
+  ChevronDownIcon,
+  ArrowRightOnRectangleIcon,
+  CheckCircleIcon,
+  ClipboardDocumentListIcon,
+  ArrowPathIcon,
+  GlobeAltIcon,
+  UserIcon
+} from "@heroicons/react/24/outline";
 
 const Sidebar: React.FC = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -9,6 +24,7 @@ const Sidebar: React.FC = () => {
   const [centerName, setCenterName] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { user, logout } = useAuth();
+  const location = useLocation();
 
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -44,8 +60,9 @@ const Sidebar: React.FC = () => {
 
           const center = await response.json();
           setCenterName(center.name);
-        } catch (error: any) {
-          console.error("Error fetching center name:", error.message);
+        } catch (error: unknown) {
+          const errorMessage = error instanceof Error ? error.message : "Unknown error";
+          console.error("Error fetching center name:", errorMessage);
           setCenterName(null);
         }
       }
@@ -53,326 +70,219 @@ const Sidebar: React.FC = () => {
     fetchCenterName();
   }, [user]);
 
+  const isActive = (path: string) => location.pathname === path;
+
+  const NavItem = ({ 
+    to, 
+    icon: Icon, 
+    children, 
+    onClick,
+    comingSoon = false
+  }: { 
+    to?: string; 
+    icon: React.ComponentType<React.SVGProps<SVGSVGElement>>; 
+    children: React.ReactNode; 
+    onClick?: () => void;
+    comingSoon?: boolean;
+  }) => {
+    const baseClasses = "flex items-center p-3 rounded-lg transition-all duration-200 group relative";
+    const activeClasses = "bg-blue-600 text-white shadow-lg";
+    const inactiveClasses = "text-gray-300 hover:bg-gray-800 hover:text-white";
+    const comingSoonClasses = "text-gray-500 cursor-not-allowed opacity-60";
+    
+    const content = (
+      <>
+        <Icon className="w-5 h-5 mr-3 transition-transform group-hover:scale-110" />
+        <span className="font-medium">{children}</span>
+        {comingSoon && (
+          <span className="ml-auto text-xs bg-yellow-500 text-yellow-900 px-2 py-1 rounded-full">
+            Soon
+          </span>
+        )}
+      </>
+    );
+
+    if (to && !comingSoon) {
+      return (
+        <Link
+          to={to}
+          className={`${baseClasses} ${isActive(to) ? activeClasses : inactiveClasses}`}
+        >
+          {content}
+        </Link>
+      );
+    }
+
+    return (
+      <div
+        className={`${baseClasses} ${comingSoon ? comingSoonClasses : inactiveClasses}`}
+        onClick={!comingSoon ? onClick : undefined}
+      >
+        {content}
+      </div>
+    );
+  };
+
+  const DropdownSection = ({ 
+    title, 
+    isOpen, 
+    onToggle, 
+    children 
+  }: { 
+    title: string; 
+    isOpen: boolean; 
+    onToggle: () => void; 
+    children: React.ReactNode;
+  }) => (
+    <div className="mb-4">
+      <button
+        onClick={onToggle}
+        className="flex items-center justify-between w-full p-2 text-gray-400 hover:text-white transition-colors duration-200"
+      >
+        <span className="text-xs font-bold uppercase tracking-wider">{title}</span>
+        <ChevronDownIcon 
+          className={`w-4 h-4 transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`} 
+        />
+      </button>
+      <div className={`mt-2 space-y-1 overflow-hidden transition-all duration-300 ${
+        isOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+      }`}>
+        {children}
+      </div>
+    </div>
+  );
+
   return (
-    <div className="h-screen w-52 bg-gradient-to-b from-black to-gray-900 text-white p-4 overflow-y-scroll text-sm shadow-lg animate-slide-in custom-scrollbar">
-      <div className="relative">
-        <div className="flex items-center space-x-4 mb-6 cursor-pointer group" onClick={toggleDropdown}>
-          <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-md transition-transform group-hover:scale-105">
-            <span className="text-sm text-gray-900 font-bold">
+    <div className="h-screen w-64 sidebar-gradient text-white p-6 overflow-y-auto custom-scrollbar shadow-2xl">
+      {/* User Profile Section */}
+      <div className="relative mb-8">
+        <div 
+          className="flex items-center space-x-3 p-4 bg-white/10 rounded-xl cursor-pointer group transition-all duration-200 hover:bg-white/20" 
+          onClick={toggleDropdown}
+        >
+          <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center shadow-lg">
+            <span className="text-lg font-bold text-white">
               {user?.role === "superadmin" ? "SA" : centerName?.charAt(0) || "A"}
             </span>
           </div>
-          <div className="flex items-center">
-            <div className="font-bold transition-colors group-hover:text-gray-300">
+          <div className="flex-1 min-w-0">
+            <div className="font-semibold text-white truncate">
               {user?.role === "superadmin" ? "Super Admin" : centerName || "Admin"}
             </div>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className={`h-5 w-5 ml-4 text-gray-300 transform transition-transform duration-300 ${isDropdownOpen ? "rotate-180" : ""}`}
-              viewBox="0 0 20 20"
-              fill="currentColor"
-            >
-              <path
-                fillRule="evenodd"
-                d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                clipRule="evenodd"
-              />
-            </svg>
+            <div className="text-xs text-gray-300 flex items-center">
+              <CheckCircleIcon className="w-3 h-3 mr-1" />
+              Online
+            </div>
           </div>
+          <ChevronDownIcon 
+            className={`w-5 h-5 text-gray-300 transition-transform duration-300 ${
+              isDropdownOpen ? "rotate-180" : ""
+            }`} 
+          />
         </div>
+        
         {isDropdownOpen && (
           <div
-            className="absolute left-12 w-42 bg-gray-800 text-white rounded-lg shadow-xl z-10 animate-dropdown"
+            className="absolute top-full left-0 right-0 mt-2 bg-gray-800 rounded-lg shadow-xl z-50 animate-dropdown"
             ref={dropdownRef}
           >
-            <ul className="divide-y divide-gray-700">
-              {/* <li>
-                <a
-                  href="/myprofile"
-                  className="block px-4 py-2 hover:bg-gray-700 hover:text-gray-200 rounded-t-lg transition-colors duration-200"
-                >
-                  My Profile
-                </a>
-              </li> */}
-              <li>
-                <button
-                  onClick={logout}
-                  className="block w-full text-left px-4 py-2 hover:bg-gray-700 hover:text-gray-200 rounded-b-lg transition-colors duration-200"
-                >
-                  Logout
-                </button>
-              </li>
-            </ul>
+            <div className="p-2">
+              <button
+                onClick={logout}
+                className="flex items-center w-full p-3 text-gray-300 hover:bg-gray-700 hover:text-white rounded-lg transition-colors duration-200"
+              >
+                <ArrowRightOnRectangleIcon className="w-4 h-4 mr-3" />
+                Logout
+              </button>
+            </div>
           </div>
         )}
       </div>
-      <div className="my-4 border-t border-gray-700"></div>
-      <div className="mb-6">
-        <div className="text-xs font-bold mb-2 text-gray-400">NAVIGATION</div>
-        <ul className="space-y-2">
-          <li>
-            <a
-              href="/"
-              className="flex items-center p-2 hover:bg-gray-800 rounded-lg transition-all duration-200 hover:shadow-md"
-            >
-              <svg
-                className="w-5 h-5 mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-                />
-              </svg>
+
+      {/* Navigation Menu */}
+      <nav className="space-y-6">
+        {/* Main Navigation */}
+        <div>
+          <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
+            Main Menu
+          </div>
+          <div className="space-y-1">
+            <NavItem to="/" icon={HomeIcon}>
               Dashboard
-            </a>
-          </li>
-        </ul>
-      </div>
-      <div className="my-4 border-t border-gray-700"></div>
-      <div className="mb-6">
-        <div className="text-xs font-bold mb-2 text-gray-400">USERS</div>
-        <ul className="space-y-2">
-          <li>
-            <Link
-              to="/centers"
-              className="flex items-center p-2 hover:bg-gray-800 rounded-lg transition-all duration-200 hover:shadow-md"
-            >
-              <svg
-                className="w-5 h-5 mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a2 2 0 012-2h2a2 2 0 012 2v5m-4 0h4"
-                />
-              </svg>
-              Center
-            </Link>
-          </li>
-          {user?.role === "superadmin" && (
-            <li>
-              <Link
-                to="/add-center"
-                className="flex items-center p-2 hover:bg-gray-800 rounded-lg transition-all duration-200 hover:shadow-md"
-              >
-                <svg
-                  className="w-5 h-5 mr-2"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M12 4v16m8-8H4"
-                  />
-                </svg>
+            </NavItem>
+          </div>
+        </div>
+
+        {/* Centers Management */}
+        <div>
+          <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
+            Centers
+          </div>
+          <div className="space-y-1">
+            <NavItem to="/centers" icon={BuildingOfficeIcon}>
+              All Centers
+            </NavItem>
+            {user?.role === "superadmin" && (
+              <NavItem to="/add-center" icon={PlusIcon}>
                 Add Center
-              </Link>
-            </li>
-          )}
-        </ul>
-      </div>
-      <div className="my-4 border-t border-gray-700"></div>
-      <div className="mb-6">
-        <div
-          className="flex items-center justify-between cursor-pointer group"
-          onClick={toggleStudents}
-        >
-          <div className="text-xs font-bold mb-2 text-gray-400 group-hover:text-gray-200 transition-colors duration-200">
-            STUDENTS
+              </NavItem>
+            )}
           </div>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className={`h-5 w-5 text-gray-400 transform transition-transform duration-300 group-hover:text-gray-200 ${isStudentsOpen ? "rotate-180" : ""}`}
-            viewBox="0 0 20 20"
-            fill="currentColor"
-          >
-            <path
-              fillRule="evenodd"
-              d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-              clipRule="evenodd"
-            />
-          </svg>
         </div>
-        {isStudentsOpen && (
-          <ul className="space-y-2 mt-2 animate-dropdown">
-            <li>
-              <Link
-                to="/student-application-foam"
-                className="flex items-center p-2 pl-6 hover:bg-gray-800 rounded-lg transition-all duration-200 hover:shadow-md"
-              >
-                <svg
-                  className="w-4 h-4 mr-2"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                  />
-                </svg>
-                Apply Fresh
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="/students"
-                className="flex items-center p-2 pl-6 hover:bg-gray-800 rounded-lg transition-all duration-200 hover:shadow-md"
-              >
-                <svg
-                  className="w-4 h-4 mr-2"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                  />
-                </svg>
-                Show Students
-              </Link>
-            </li>
-          </ul>
-        )}
-        <ul className="space-y-2 mt-2">
-          <li>
-            <a
-              href="#"
-              className="flex items-center p-2 hover:bg-gray-800 rounded-lg transition-all duration-200 hover:shadow-md"
-            >
-              <svg
-                className="w-5 h-5 mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01m-.01 4h.01"
-                />
-              </svg>
-              Exams
-            </a>
-          </li>
-          <li>
-            <a
-              href="#"
-              className="flex items-center p-2 hover:bg-gray-800 rounded-lg transition-all duration-200 hover:shadow-md"
-            >
-              <svg
-                className="w-5 h-5 mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M8 7h12m0 0l-4-4m4 4l-4 4m-12 1h12m-4 4H8m4 4l4-4m-4 4l-4-4"
-                />
-              </svg>
-              Re Reg
-            </a>
-          </li>
-        </ul>
-      </div>
-      <div className="my-4 border-t border-gray-700"></div>
-      <div className="mb-6">
-        <div
-          className="flex items-center justify-between cursor-pointer group"
-          onClick={togglePayments}
+
+        {/* Students Management */}
+        <DropdownSection 
+          title="Students" 
+          isOpen={isStudentsOpen} 
+          onToggle={toggleStudents}
         >
-          <div className="text-xs font-bold mb-2 text-gray-400 group-hover:text-gray-200 transition-colors duration-200">
-            PAYMENTS
+          <NavItem to="/students" icon={UserGroupIcon}>
+            All Students
+          </NavItem>
+          <NavItem to="/student-application-foam" icon={DocumentTextIcon}>
+            New Application
+          </NavItem>
+          <NavItem to="/re-registration" icon={ArrowPathIcon}>
+            Re Registration
+          </NavItem>
+          <NavItem to="#" icon={ClipboardDocumentListIcon} comingSoon>
+            Exams
+          </NavItem>
+        </DropdownSection>
+
+        {/* Payments */}
+        <DropdownSection 
+          title="Payments" 
+          isOpen={isPaymentsOpen} 
+          onToggle={togglePayments}
+        >
+          <NavItem to="/offline-payments" icon={CreditCardIcon}>
+            Offline Payments
+          </NavItem>
+          <NavItem to="#" icon={GlobeAltIcon} comingSoon>
+            Online Payments
+          </NavItem>
+        </DropdownSection>
+
+        {/* Sub-Counsellor Section */}
+        <div>
+          <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
+            Staff Management
           </div>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className={`h-5 w-5 text-gray-400 transform transition-transform duration-300 group-hover:text-gray-200 ${isPaymentsOpen ? "rotate-180" : ""}`}
-            viewBox="0 0 20 20"
-            fill="currentColor"
-          >
-            <path
-              fillRule="evenodd"
-              d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-              clipRule="evenodd"
-            />
-          </svg>
+          <div className="space-y-1">
+            <NavItem to="#" icon={UserIcon} comingSoon>
+              Sub-Counsellor
+            </NavItem>
+          </div>
         </div>
-        {isPaymentsOpen && (
-          <ul className="space-y-2 mt-2 mb-20 animate-dropdown">
-            <li>
-              <Link
-                to="#"
-                className="flex items-center p-2 pl-6 hover:bg-gray-800 rounded-lg transition-all duration-200 hover:shadow-md"
-              >
-                <svg
-                  className="w-4 h-4 mr-2"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
-                  />
-                </svg>
-                Online
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="/offline-payments"
-                className="flex items-center p-2 pl-6 hover:bg-gray-800 rounded-lg transition-all duration-200 hover:shadow-md"
-              >
-                <svg
-                  className="w-4 h-4 mr-2"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"
-                  />
-                </svg>
-                Offline
-              </Link>
-            </li>
-          </ul>
-        )}
+      </nav>
+
+      {/* Footer */}
+      <div className="mt-auto pt-6 border-t border-gray-700">
+        <div className="text-xs text-gray-400 text-center">
+          <p>Admission Management</p>
+          <p className="mt-1">v2.0.0</p>
+        </div>
       </div>
     </div>
   );

@@ -5,6 +5,7 @@ import cookieParser from "cookie-parser";
 import centerRoutes from "./src/routes/centerRoutes";
 import studentRoutes from "./src/routes/studentRoutes";
 import walletRoutes from "./src/routes/walletRoutes";
+import authRoutes from "./src/routes/authRoutes";
 import authenticateToken from "./src/middleware/auth";
 import errorHandler from "./src/middleware/errorHandler";
 import jwt from "jsonwebtoken";
@@ -29,10 +30,10 @@ const app = express();
 // Configure CORS to allow requests from the frontend domain
 app.use(
   cors({
-    origin: isProduction ? CORS_ORIGIN : "http://localhost:5174", 
+    origin: isProduction ? CORS_ORIGIN : "http://localhost:5174",
     credentials: true,
     methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    allowedHeaders: ["Content-Type", "Authorization", "Cookie"],
   })
 );
 
@@ -80,10 +81,11 @@ const loginHandler = async (req: Request, res: Response) => {
     const token = jwt.sign(user, JWT_SECRET, { expiresIn: "1d" });
     res.cookie("token", token, {
       httpOnly: true,
-      secure: isProduction, // Secure cookies in production (HTTPS)
-      sameSite: isProduction ? "none" : "lax", // Use "none" for cross-site in production
+      secure: isProduction,
+      sameSite: "lax",
       maxAge: 24 * 60 * 60 * 1000,
       path: "/",
+      domain: isProduction ? undefined : "localhost"
     });
     console.log("Cookie set for superadmin:", { token });
     res.status(200).json({ role: "superadmin", username, message: "Login successful" });
@@ -97,10 +99,11 @@ const loginHandler = async (req: Request, res: Response) => {
       const token = jwt.sign(user, JWT_SECRET, { expiresIn: "1d" });
       res.cookie("token", token, {
         httpOnly: true,
-        secure: isProduction, // Secure cookies in production (HTTPS)
-        sameSite: isProduction ? "none" : "lax", // Use "none" for cross-site in production
+        secure: isProduction,
+        sameSite: "lax",
         maxAge: 24 * 60 * 60 * 1000,
         path: "/",
+        domain: isProduction ? undefined : "localhost"
       });
       console.log("Cookie set for admin:", { token });
       res.status(200).json({ role: "admin", centerId: center._id.toString(), message: "Login successful" });
@@ -133,6 +136,7 @@ const logoutHandler = (req: Request, res: Response) => {
 app.post("/api/login", loginHandler);
 app.get("/api/check-auth", authenticateToken, checkAuthHandler);
 app.post("/api/logout", logoutHandler);
+app.use("/api/auth", authRoutes);
 app.use("/api/centers", authenticateToken, centerRoutes);
 app.use("/api/students", authenticateToken, studentRoutes);
 app.use("/api/wallet", authenticateToken, walletRoutes);

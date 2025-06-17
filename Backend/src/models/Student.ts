@@ -1,6 +1,3 @@
-
-
-
 // Student.ts
 import mongoose, { Schema, Document } from "mongoose";
 
@@ -39,6 +36,7 @@ interface IStudent extends Document {
   district: string;
   state: string;
   year: string;
+  semester: number;
   highSchoolSubject: string;
   highSchoolYear: string;
   highSchoolBoard: string;
@@ -82,6 +80,11 @@ interface IStudent extends Document {
   admDate: Date;
   docStatus?: string; // New field for document status
   pendingDocuments?: string[]; // New field for pending documents
+  pendencyRemarks?: string; // New field for pendency remarks from superadmin
+  pendencyDate?: Date; // New field for pendency date
+  reRegistrationStatus?: string; // New field for re-registration status
+  lastReRegistrationDate?: Date; // New field for last re-registration date
+  nextReRegistrationEligible?: Date; // New field for when student becomes eligible for next re-registration
 }
 
 const StudentSchema: Schema = new Schema(
@@ -120,6 +123,7 @@ const StudentSchema: Schema = new Schema(
     district: { type: String, required: true },
     state: { type: String, required: true },
     year: { type: String, required: true },
+    semester: { type: Number, required: true, default: 1 },
     highSchoolSubject: { type: String, required: true },
     highSchoolYear: { type: String, required: true },
     highSchoolBoard: { type: String, required: true },
@@ -163,6 +167,11 @@ const StudentSchema: Schema = new Schema(
     admDate: { type: Date, required: true, default: Date.now },
     docStatus: { type: String, default: "Pending" }, // New field
     pendingDocuments: { type: [String], default: [] }, // New field
+    pendencyRemarks: { type: String, required: false }, // New field
+    pendencyDate: { type: Date, required: false }, // New field
+    reRegistrationStatus: { type: String, default: "Eligible" }, // New field: Eligible, Applied, Completed
+    lastReRegistrationDate: { type: Date, required: false }, // New field
+    nextReRegistrationEligible: { type: Date, required: false }, // New field
   },
   { timestamps: true }
 );

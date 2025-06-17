@@ -18,9 +18,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const checkAuth = async () => {
     try {
-      setLoading(true); // Set loading to true while checking auth
+      setLoading(true);
       const response = await fetch(`${API_URL}/api/check-auth`, {
         credentials: "include",
+        headers: {
+          "Accept": "application/json"
+        }
       });
 
       if (response.ok) {
@@ -33,15 +36,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         console.log("Auth check failed, status:", response.status);
         setUser(null);
         localStorage.removeItem("user");
-        // Do not navigate to /login here; let components handle it
       }
     } catch (error) {
       console.error("Auth check failed:", error);
       setUser(null);
       localStorage.removeItem("user");
-      // Do not navigate to /login here; let components handle it
     } finally {
-      setLoading(false); // Set loading to false after check
+      setLoading(false);
     }
   };
 
@@ -49,7 +50,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const response = await fetch(`${API_URL}/api/login`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
         body: JSON.stringify({ username, password }),
         credentials: "include",
       });

@@ -16,9 +16,7 @@ import {
   ChevronRightIcon, 
   UserIcon,
   MagnifyingGlassIcon,
-  TrashIcon,
-  ExclamationTriangleIcon,
-  ShieldCheckIcon
+  TrashIcon
 } from "@heroicons/react/24/outline";
 
 // Define the User type locally to include the token property
@@ -42,7 +40,6 @@ type StudentData = {
   apaarAbcId: string;
   email: string;
   year?: string;
-  semester?: number;
   debId?: string;
   applicationNumber?: string;
   enrollmentNumber?: string;
@@ -66,9 +63,6 @@ type StudentData = {
   pendingDocuments?: string[];
   pendencyRemarks?: string;
   pendencyDate?: string;
-  reRegistrationStatus?: string;
-  lastReRegistrationDate?: string;
-  nextReRegistrationEligible?: string;
 };
 
 // Custom EditModal Component with Calendar for Processed On
@@ -98,15 +92,6 @@ const EditModal: React.FC<{
             onChange={(e) => onChange(e.target.value)}
             className="w-full p-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-[11px] bg-gray-50"
           />
-        ) : field === "semester" ? (
-          <input
-            type="number"
-            min="1"
-            max="8"
-            value={value || "1"}
-            onChange={(e) => onChange(e.target.value)}
-            className="w-full p-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-[11px] bg-gray-50"
-          />
         ) : (
           <input
             type="text"
@@ -121,6 +106,301 @@ const EditModal: React.FC<{
             className="bg-blue-500 text-white py-2 px-5 rounded-lg hover:bg-blue-600 transition-all duration-200"
           >
             Save
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Comprehensive Student Edit Modal for Superadmin
+const StudentEditModal: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  student: StudentData | null;
+  onSave: (updates: Partial<StudentData>) => void;
+}> = ({ isOpen, onClose, student, onSave }) => {
+  const [formData, setFormData] = useState<Partial<StudentData>>({});
+
+  useEffect(() => {
+    if (student) {
+      setFormData({
+        studentName: student.studentName || '',
+        fatherName: student.fatherName || '',
+        motherName: student.motherName || '',
+        email: student.email || '',
+        mobileNumber: student.mobileNumber || '',
+        dob: student.dob || '',
+        course: student.course || '',
+        year: student.year || '',
+        admissionType: student.admissionType || '',
+        admissionSession: student.admissionSession || '',
+        university: student.university || '',
+        apaarAbcId: student.apaarAbcId || '',
+        debId: student.debId || '',
+        applicationNumber: student.applicationNumber || '',
+        enrollmentNumber: student.enrollmentNumber || '',
+        processedOn: student.processedOn || '',
+        applicationStatus: student.applicationStatus || 'New',
+      });
+    }
+  }, [student]);
+
+  const handleInputChange = (field: keyof StudentData, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSave = () => {
+    onSave(formData);
+    onClose();
+  };
+
+  if (!isOpen || !student) return null;
+
+  return (
+    <div className="fixed inset-0 flex items-center justify-center z-50">
+      <div className="fixed inset-0 bg-black bg-opacity-75 backdrop-blur-sm transition-opacity duration-300" onClick={onClose}></div>
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl mx-4 relative z-10 max-h-[90vh] overflow-y-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 sticky top-0 bg-white rounded-t-2xl">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <UserIcon className="w-6 h-6 text-blue-600" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">Edit Student Details</h2>
+              <p className="text-sm text-gray-500">{student.studentName}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200">
+            <span className="text-gray-500 text-xl">✕</span>
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-6 space-y-6">
+          {/* Personal Information */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+              <UserIcon className="w-5 h-5 mr-2 text-blue-600" />
+              Personal Information
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Student Name</label>
+                <input
+                  type="text"
+                  value={formData.studentName || ''}
+                  onChange={(e) => handleInputChange('studentName', e.target.value)}
+                  className="form-input w-full"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Father's Name</label>
+                <input
+                  type="text"
+                  value={formData.fatherName || ''}
+                  onChange={(e) => handleInputChange('fatherName', e.target.value)}
+                  className="form-input w-full"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Mother's Name</label>
+                <input
+                  type="text"
+                  value={formData.motherName || ''}
+                  onChange={(e) => handleInputChange('motherName', e.target.value)}
+                  className="form-input w-full"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Date of Birth</label>
+                <input
+                  type="date"
+                  value={formData.dob || ''}
+                  onChange={(e) => handleInputChange('dob', e.target.value)}
+                  className="form-input w-full"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Contact Information */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+              <span className="w-5 h-5 mr-2 text-blue-600">📞</span>
+              Contact Information
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                <input
+                  type="email"
+                  value={formData.email || ''}
+                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  className="form-input w-full"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Mobile Number</label>
+                <input
+                  type="text"
+                  value={formData.mobileNumber || ''}
+                  onChange={(e) => handleInputChange('mobileNumber', e.target.value)}
+                  className="form-input w-full"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Academic Information */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+              <AcademicCapIcon className="w-5 h-5 mr-2 text-blue-600" />
+              Academic Information
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Course</label>
+                <input
+                  type="text"
+                  value={formData.course || ''}
+                  onChange={(e) => handleInputChange('course', e.target.value)}
+                  className="form-input w-full"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Year</label>
+                <input
+                  type="text"
+                  value={formData.year || ''}
+                  onChange={(e) => handleInputChange('year', e.target.value)}
+                  className="form-input w-full"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Admission Type</label>
+                <select
+                  value={formData.admissionType || ''}
+                  onChange={(e) => handleInputChange('admissionType', e.target.value)}
+                  className="form-select w-full"
+                >
+                  <option value="">Select Admission Type</option>
+                  <option value="Regular">Regular</option>
+                  <option value="Lateral Entry">Lateral Entry</option>
+                  <option value="Migration">Migration</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Admission Session</label>
+                <select
+                  value={formData.admissionSession || ''}
+                  onChange={(e) => handleInputChange('admissionSession', e.target.value)}
+                  className="form-select w-full"
+                >
+                  <option value="">Select Session</option>
+                  <option value="Jan-2025">Jan-2025</option>
+                  <option value="Jan-2024">Jan-2024</option>
+                </select>
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">University</label>
+                <select
+                  value={formData.university || ''}
+                  onChange={(e) => handleInputChange('university', e.target.value)}
+                  className="form-select w-full"
+                >
+                  <option value="">Select University</option>
+                  <option value="Mangalayatan University- Online">Mangalayatan University- Online</option>
+                  <option value="Mangalayatan University- Distance">Mangalayatan University- Distance</option>
+                  <option value="Subharti University">Subharti University</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Application & IDs */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+              <DocumentTextIcon className="w-5 h-5 mr-2 text-blue-600" />
+              Application & IDs
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Application Number</label>
+                <input
+                  type="text"
+                  value={formData.applicationNumber || ''}
+                  onChange={(e) => handleInputChange('applicationNumber', e.target.value)}
+                  className="form-input w-full"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Enrollment Number</label>
+                <input
+                  type="text"
+                  value={formData.enrollmentNumber || ''}
+                  onChange={(e) => handleInputChange('enrollmentNumber', e.target.value)}
+                  className="form-input w-full"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">ABC ID</label>
+                <input
+                  type="text"
+                  value={formData.apaarAbcId || ''}
+                  onChange={(e) => handleInputChange('apaarAbcId', e.target.value)}
+                  className="form-input w-full"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">DEB ID</label>
+                <input
+                  type="text"
+                  value={formData.debId || ''}
+                  onChange={(e) => handleInputChange('debId', e.target.value)}
+                  className="form-input w-full"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Processed On</label>
+                <input
+                  type="date"
+                  value={formData.processedOn || ''}
+                  onChange={(e) => handleInputChange('processedOn', e.target.value)}
+                  className="form-input w-full"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Application Status</label>
+                <select
+                  value={formData.applicationStatus || ''}
+                  onChange={(e) => handleInputChange('applicationStatus', e.target.value)}
+                  className="form-select w-full"
+                >
+                  <option value="New">New</option>
+                  <option value="In Progress">In Progress</option>
+                  <option value="Payment Received">Payment Received</option>
+                  <option value="Enrolled">Enrolled</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex justify-end space-x-3 p-6 border-t border-gray-200 sticky bottom-0 bg-white rounded-b-2xl">
+          <button
+            onClick={onClose}
+            className="px-6 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200 font-medium"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            className="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-md hover:shadow-lg transition-all duration-200 font-medium"
+          >
+            Save Changes
           </button>
         </div>
       </div>
@@ -158,6 +438,10 @@ const Allstudents: React.FC = () => {
   const [entriesPerPage, setEntriesPerPage] = useState<number>(10);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [activeFilter, setActiveFilter] = useState<string>("All");
+
+  // Add state for comprehensive edit modal
+  const [isStudentEditModalOpen, setIsStudentEditModalOpen] = useState(false);
+  const [editingStudent, setEditingStudent] = useState<StudentData | null>(null);
 
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -208,7 +492,6 @@ const Allstudents: React.FC = () => {
   useEffect(() => {
     let filtered = [...students];
 
-    // Apply dropdown filters first
     if (applicationStatusFilter !== "All") {
       filtered = filtered.filter(
         (student) => student.applicationStatus === applicationStatusFilter
@@ -233,14 +516,7 @@ const Allstudents: React.FC = () => {
       );
     }
 
-    if (searchQuery) {
-      filtered = filtered.filter((student) =>
-        student.studentName.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-
-    // Apply quick filters
-    if (activeFilter === "Documentation") {
+    if (activeFilter === "Documents") {
       filtered = filtered.filter(
         (student) =>
           !student.photo ||
@@ -253,16 +529,16 @@ const Allstudents: React.FC = () => {
           !student.abcDebScreenshot ||
           !student.otherDocument
       );
-    } else if (activeFilter === "Pendencies") {
-      filtered = filtered.filter((student) => 
-        student.docStatus === "Pendency"
-      );
-    } else if (activeFilter === "Verified") {
-      filtered = filtered.filter((student) => student.docStatus === "Verified");
     } else if (activeFilter === "Total Processed") {
       filtered = filtered.filter((student) => student.processedOn);
     } else if (activeFilter === "Total Enrolled") {
       filtered = filtered.filter((student) => student.enrollmentNumber);
+    }
+
+    if (searchQuery) {
+      filtered = filtered.filter((student) =>
+        student.studentName.toLowerCase().includes(searchQuery.toLowerCase())
+      );
     }
 
     setFilteredStudents(filtered);
@@ -432,16 +708,8 @@ const Allstudents: React.FC = () => {
       }
 
       const updatedStudent = await response.json();
-      
-      // Update both students arrays immediately
-      const updateStudentInArray = (studentArray: StudentData[]) =>
-        studentArray.map((student) => 
-          student._id === studentId ? { ...student, ...updatedStudent } : student
-        );
-      
-      setStudents(updateStudentInArray);
-      setFilteredStudents(updateStudentInArray);
-      
+      setStudents(students.map((student) => (student._id === studentId ? { ...student, ...updatedStudent } : student)));
+      setFilteredStudents(filteredStudents.map((student) => (student._id === studentId ? { ...student, ...updatedStudent } : student)));
       toast.dismiss(loadingToast);
       toast.success("Field updated successfully");
     } catch (error: unknown) {
@@ -606,39 +874,80 @@ const Allstudents: React.FC = () => {
   };
 
   const handleDocumentsClick = () => {
-    setActiveFilter("Documentation");
-  };
-
-  const handlePendenciesClick = () => {
-    setActiveFilter("Pendencies");
-  };
-
-  const handleVerifiedClick = () => {
-    setActiveFilter("Verified");
+    setActiveFilter("Documents");
+    // Filter to show students with pending documentation
+    const pendingStudents = students.filter((s) => s.docStatus === "Pending" || s.pendencyRemarks);
+    setFilteredStudents(pendingStudents);
   };
 
   const handleTotalProcessedClick = () => {
     setActiveFilter("Total Processed");
+    setApplicationStatusFilter("All");
+    setSessionFilter("All");
+    setUniversityFilter("All");
+    setCenterSearch("");
+    setSearchQuery("");
   };
 
   const handleTotalEnrolledClick = () => {
     setActiveFilter("Total Enrolled");
+    setApplicationStatusFilter("All");
+    setSessionFilter("All");
+    setUniversityFilter("All");
+    setCenterSearch("");
+    setSearchQuery("");
   };
 
   const handleEditField = (studentId: string, field: keyof StudentData, value: string) => {
     setEditField({ studentId, field });
-    setEditValue(value || "");
+    setEditValue(value);
     setIsEditModalOpen(true);
   };
 
   const handleSaveEdit = () => {
     if (editField) {
-      const value = editField.field === "semester" ? parseInt(editValue) || 1 : editValue;
-      updateStudentField(editField.studentId, { [editField.field]: value });
+      updateStudentField(editField.studentId, { [editField.field]: editValue });
       setIsEditModalOpen(false);
       setEditField(null);
       setEditValue("");
     }
+  };
+
+  // Add functions for comprehensive edit modal
+  const openStudentEditModal = (student: StudentData) => {
+    setEditingStudent(student);
+    setIsStudentEditModalOpen(true);
+  };
+
+  const closeStudentEditModal = () => {
+    setEditingStudent(null);
+    setIsStudentEditModalOpen(false);
+  };
+
+  const handleStudentSave = async (updates: Partial<StudentData>) => {
+    if (editingStudent) {
+      await updateStudentField(editingStudent._id, updates);
+      closeStudentEditModal();
+    }
+  };
+
+  // Add handlers for Pendencies and Verified
+  const handlePendenciesClick = () => {
+    setActiveFilter("Pendencies");
+    setApplicationStatusFilter("All");
+    setSessionFilter("All");
+    setUniversityFilter("All");
+    setCenterSearch("");
+    setSearchQuery("");
+  };
+
+  const handleVerifiedClick = () => {
+    setActiveFilter("Verified");
+    setApplicationStatusFilter("All");
+    setSessionFilter("All");
+    setUniversityFilter("All");
+    setCenterSearch("");
+    setSearchQuery("");
   };
 
   if (loading) return <Placeholder type="loading" />;
@@ -679,18 +988,7 @@ const Allstudents: React.FC = () => {
               <div>
                 <p className="text-white/80 text-sm">Documentation</p>
                 <p className="text-3xl font-bold text-white">
-                  {students.filter(
-                    (s) =>
-                      !s.photo ||
-                      !s.studentSignature ||
-                      !s.addressIdProof ||
-                      !s.highSchoolMarksheet ||
-                      !s.intermediateMarksheet ||
-                      !s.graduationMarksheet ||
-                      !s.otherMarksheet ||
-                      !s.abcDebScreenshot ||
-                      !s.otherDocument
-                  ).length}
+                  {students.filter((s) => s.docStatus === "Pending" || s.pendencyRemarks).length}
                 </p>
               </div>
               <DocumentTextIcon className="w-8 h-8 text-white/60" />
@@ -745,7 +1043,7 @@ const Allstudents: React.FC = () => {
                     value={centerSearch}
                     onChange={(e) => setCenterSearch(e.target.value)}
                     className="form-input w-full"
-                  />
+                  >
                 </div>
               </div>
 
@@ -811,7 +1109,7 @@ const Allstudents: React.FC = () => {
                 </div>
               </div>
 
-              {/* Quick Filters Section */}
+              {/* Action Buttons */}
               <div className="flex flex-wrap gap-3 justify-between items-center">
                 <div className="flex flex-wrap gap-2">
                   <span className="text-sm text-gray-600">Quick Filters:</span>
@@ -825,14 +1123,12 @@ const Allstudents: React.FC = () => {
                     onClick={handlePendenciesClick}
                     className={`btn btn-sm ${activeFilter === "Pendencies" ? "btn-warning" : "btn-secondary"}`}
                   >
-                    <ExclamationTriangleIcon className="w-4 h-4 mr-1" />
-                    Pendencies ({students.filter((s) => s.docStatus === "Pendency").length})
+                    Pendencies ({students.filter((s) => s.docStatus === "Pending" || s.pendencyRemarks).length})
                   </button>
                   <button
                     onClick={handleVerifiedClick}
                     className={`btn btn-sm ${activeFilter === "Verified" ? "btn-success" : "btn-secondary"}`}
                   >
-                    <ShieldCheckIcon className="w-4 h-4 mr-1" />
                     Verified ({students.filter((s) => s.docStatus === "Verified").length})
                   </button>
                   <button
@@ -864,7 +1160,7 @@ const Allstudents: React.FC = () => {
           </div>
         </div>
 
-        {/* Students Table - Simplified for Better Readability */}
+        {/* Students Table */}
         <div className="card">
           <div className="overflow-x-auto">
             <table className="table">
@@ -878,17 +1174,19 @@ const Allstudents: React.FC = () => {
                       className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                     />
                   </th>
-                  <th>Student Details</th>
-                  <th>Academic Info</th>
-                  <th>Application Status</th>
-                  <th>Documents & IDs</th>
-                  <th>Contact & Center</th>
                   <th>Actions</th>
+                  <th>Student Info</th>
+                  <th>Application Status</th>
+                  <th>Documents</th>
+                  <th>Academic Details</th>
+                  <th>Center Info</th>
+                  <th>Contact</th>
+                  <th>IDs</th>
                 </tr>
               </thead>
               <tbody>
                 {paginatedStudents.map((student) => (
-                  <tr key={student._id} className="hover:bg-gray-50">
+                  <tr key={student._id}>
                     {/* Checkbox */}
                     <td>
                       <input
@@ -899,70 +1197,45 @@ const Allstudents: React.FC = () => {
                       />
                     </td>
 
-                    {/* Student Details */}
+                    {/* Actions */}
+                    <td>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => downloadDocuments(student)}
+                          className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                          title="Download documents"
+                        >
+                          <ArrowDownTrayIcon className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => deleteStudent(student._id)}
+                          className="p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                          title="Delete student"
+                        >
+                          <TrashIcon className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+
+                    {/* Student Info */}
                     <td>
                       <div className="flex items-center space-x-3">
                         {student.photo ? (
                           <img
                             src={student.photo}
                             alt="Student"
-                            className="w-12 h-12 rounded-full object-cover border-2 border-gray-200 cursor-pointer hover:border-blue-400 transition-all duration-200"
+                            className="w-10 h-10 rounded-full object-cover border border-gray-200 cursor-pointer hover:border-blue-400 transition-all duration-200"
                             onClick={() => openImageModal(student.photo!)}
                           />
                         ) : (
-                          <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
-                            <UserIcon className="w-6 h-6 text-gray-400" />
+                          <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
+                            <UserIcon className="w-5 h-5 text-gray-400" />
                           </div>
                         )}
                         <div>
-                          <div className="font-semibold text-gray-900 text-sm">{student.studentName}</div>
-                          <div className="text-xs text-gray-500">Father: {student.fatherName}</div>
+                          <div className="font-semibold text-gray-900">{student.studentName}</div>
+                          <div className="text-sm text-gray-500">Father: {student.fatherName}</div>
                           <div className="text-xs text-gray-400">DOB: {new Date(student.dob).toLocaleDateString()}</div>
-                          <div className="text-xs text-blue-600">Ref: {student.referenceId}</div>
-                        </div>
-                      </div>
-                    </td>
-
-                    {/* Academic Info */}
-                    <td>
-                      <div className="space-y-1">
-                        <div className="font-medium text-sm text-gray-900">{student.course}</div>
-                        <div className="text-xs text-gray-600">{student.admissionType}</div>
-                        <div className="text-xs text-blue-600 font-medium">{student.admissionSession}</div>
-                        <div className="text-xs text-gray-500">
-                          Year: {student.year ? (
-                            user?.role === "superadmin" ? (
-                              <span 
-                                className="cursor-pointer hover:text-blue-600"
-                                onClick={() => handleEditField(student._id, "year", student.year || "")}
-                              >
-                                {student.year}
-                              </span>
-                            ) : (
-                              student.year
-                            )
-                          ) : user?.role === "superadmin" ? (
-                            <span 
-                              className="text-gray-400 cursor-pointer hover:text-blue-600"
-                              onClick={() => handleEditField(student._id, "year", "")}
-                            >
-                              + Set year
-                            </span>
-                          ) : (
-                            "N/A"
-                          )}
-                        </div>
-                        <div className="text-xs text-green-600 font-medium">
-                          Semester: {user?.role === "superadmin" ? (
-                            <span 
-                              className="cursor-pointer hover:text-green-800"
-                              onClick={() => handleEditField(student._id, "semester", (student.semester || 1).toString())}
-                            >
-                              {student.semester || 1}
-                            </span>
-                          ) : (
-                            student.semester || 1
-                          )}
                         </div>
                       </div>
                     </td>
@@ -986,114 +1259,109 @@ const Allstudents: React.FC = () => {
                             {student.applicationStatus || "New"}
                           </span>
                         )}
-                        
-                        {student.processedOn ? (
+                        <div className="text-xs text-gray-500">
+                          Ref: {student.referenceId}
+                        </div>
+                        {student.processedOn && (
                           <div 
                             className={`text-xs text-green-600 ${user?.role === "superadmin" ? "cursor-pointer hover:text-green-800" : ""}`}
                             onClick={() => user?.role === "superadmin" && handleEditField(student._id, "processedOn", student.processedOn || "")}
                           >
-                            ✓ Processed: {new Date(student.processedOn).toLocaleDateString()}
+                            Processed: {new Date(student.processedOn).toLocaleDateString()}
                           </div>
-                        ) : user?.role === "superadmin" && (
+                        )}
+                        {!student.processedOn && user?.role === "superadmin" && (
                           <div 
                             className="text-xs text-gray-400 cursor-pointer hover:text-blue-600"
                             onClick={() => handleEditField(student._id, "processedOn", "")}
                           >
-                            + Set processed date
+                            Click to set processed date
                           </div>
                         )}
                       </div>
                     </td>
 
-                    {/* Documents & IDs */}
+                    {/* Documents */}
                     <td>
-                      <div className="space-y-2">
+                      <div className="space-y-1">
                         <button
                           onClick={() => openDocModal(student)}
                           className={`text-xs px-2 py-1 rounded-full ${getDocStatusColor(student.docStatus)} hover:bg-opacity-20 transition-colors`}
                         >
                           {student.docStatus || "Pending"}
                         </button>
-                        
-                        <div className="space-y-1">
-                          {student.applicationNumber ? (
-                            <div 
-                              className={`text-xs text-gray-600 ${user?.role === "superadmin" ? "cursor-pointer hover:text-blue-600" : ""}`}
-                              onClick={() => user?.role === "superadmin" && handleEditField(student._id, "applicationNumber", student.applicationNumber || "")}
-                            >
-                              App: {student.applicationNumber}
-                            </div>
-                          ) : user?.role === "superadmin" && (
-                            <div 
-                              className="text-xs text-gray-400 cursor-pointer hover:text-blue-600"
-                              onClick={() => handleEditField(student._id, "applicationNumber", "")}
-                            >
-                              + Set application number
-                            </div>
-                          )}
-                          
-                          {student.enrollmentNumber ? (
-                            <div 
-                              className={`text-xs text-green-600 ${user?.role === "superadmin" ? "cursor-pointer hover:text-green-800" : ""}`}
-                              onClick={() => user?.role === "superadmin" && handleEditField(student._id, "enrollmentNumber", student.enrollmentNumber || "")}
-                            >
-                              Enroll: {student.enrollmentNumber}
-                            </div>
-                          ) : user?.role === "superadmin" && (
-                            <div 
-                              className="text-xs text-gray-400 cursor-pointer hover:text-blue-600"
-                              onClick={() => handleEditField(student._id, "enrollmentNumber", "")}
-                            >
-                              + Set enrollment number
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="space-y-1 pt-1 border-t border-gray-100">
-                          <div className="text-xs text-gray-500">
-                            ABC: {student.apaarAbcId}
+                        {student.applicationNumber ? (
+                          <div 
+                            className={`text-xs text-gray-500 ${user?.role === "superadmin" ? "cursor-pointer hover:text-blue-600" : ""}`}
+                            onClick={() => user?.role === "superadmin" && handleEditField(student._id, "applicationNumber", student.applicationNumber || "")}
+                          >
+                            App: {student.applicationNumber}
                           </div>
-                          <div className="text-xs text-gray-500">
-                            DEB: {student.debId || "N/A"}
+                        ) : user?.role === "superadmin" && (
+                          <div 
+                            className="text-xs text-gray-400 cursor-pointer hover:text-blue-600"
+                            onClick={() => handleEditField(student._id, "applicationNumber", "")}
+                          >
+                            Click to set app number
                           </div>
-                        </div>
+                        )}
+                        {student.enrollmentNumber ? (
+                          <div 
+                            className={`text-xs text-green-600 ${user?.role === "superadmin" ? "cursor-pointer hover:text-green-800" : ""}`}
+                            onClick={() => user?.role === "superadmin" && handleEditField(student._id, "enrollmentNumber", student.enrollmentNumber || "")}
+                          >
+                            Enroll: {student.enrollmentNumber}
+                          </div>
+                        ) : user?.role === "superadmin" && (
+                          <div 
+                            className="text-xs text-gray-400 cursor-pointer hover:text-blue-600"
+                            onClick={() => handleEditField(student._id, "enrollmentNumber", "")}
+                          >
+                            Click to set enrollment
+                          </div>
+                        )}
                       </div>
                     </td>
 
-                    {/* Contact & Center */}
+                    {/* Academic Details */}
                     <td>
                       <div className="space-y-1">
-                        <div className="text-sm font-medium text-gray-900">{student.centerName || "N/A"}</div>
+                        <div className="font-medium text-sm">{student.course}</div>
+                        <div className="text-xs text-gray-500">Year: {student.year || "N/A"}</div>
+                        <div className="text-xs text-gray-500">{student.admissionType}</div>
+                        <div className="text-xs text-blue-600">{student.admissionSession}</div>
+                      </div>
+                    </td>
+
+                    {/* Center Info */}
+                    <td>
+                      <div className="space-y-1">
+                        <div className="font-medium text-sm">{student.centerName || "N/A"}</div>
                         <div className="text-xs text-gray-500">Code: {student.center}</div>
                         <div className="text-xs text-gray-400">{student.university}</div>
-                        
-                        <div className="pt-1 border-t border-gray-100 space-y-1">
-                          <div className="text-xs text-gray-600">{student.email}</div>
-                          <div className="text-xs text-gray-500">{student.mobileNumber}</div>
-                          <div className="text-xs text-gray-400">
-                            Adm: {new Date(student.admDate).toLocaleDateString()}
-                          </div>
+                      </div>
+                    </td>
+
+                    {/* Contact */}
+                    <td>
+                      <div className="space-y-1">
+                        <div className="text-sm">{student.email}</div>
+                        <div className="text-xs text-gray-500">{student.mobileNumber}</div>
+                        <div className="text-xs text-gray-400">
+                          Adm: {new Date(student.admDate).toLocaleDateString()}
                         </div>
                       </div>
                     </td>
 
-                    {/* Actions */}
+                    {/* IDs */}
                     <td>
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => downloadDocuments(student)}
-                          className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-                          title="Download documents"
-                        >
-                          <ArrowDownTrayIcon className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => deleteStudent(student._id)}
-                          className="p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-                          title="Delete student"
-                        >
-                          <TrashIcon className="w-4 h-4" />
-                        </button>
+                      <div className="space-y-1">
+                        <div className="text-xs">
+                          <span className="text-gray-500">ABC:</span> {student.apaarAbcId}
+                        </div>
+                        <div className="text-xs">
+                          <span className="text-gray-500">DEB:</span> {student.debId || "N/A"}
+                        </div>
                       </div>
                     </td>
                   </tr>

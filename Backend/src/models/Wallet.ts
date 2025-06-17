@@ -10,7 +10,7 @@ export interface IWallet extends Document {
   amount: number;
   transactionId: string;
   transactionDate: Date;
-  paySlip: string;
+  paySlip?: string; // Made optional for system entries
   addedOn: Date; // Added
   status: "Pending" | "Approved" | "Rejected"; // Added
 }
@@ -25,7 +25,7 @@ const WalletSchema: Schema = new Schema({
   amount: { type: Number, required: true },
   transactionId: { type: String, required: true },
   transactionDate: { type: Date, required: true },
-  paySlip: { type: String, required: true },
+  paySlip: { type: String, required: false }, // Made optional for system entries
   addedOn: { type: Date, default: Date.now }, // Added with default
   status: { type: String, enum: ["Pending", "Approved", "Rejected"], default: "Pending" }, // Added with default
 });

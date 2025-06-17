@@ -1,6 +1,7 @@
 import express from "express";
 import Center from "../models/Center";
 import Student from "../models/Student";
+import Wallet from "../models/Wallet";
 import mongoose from "mongoose";
 import { generateUniqueCode } from "../utils/generateUniqueCode";
 
@@ -18,6 +19,26 @@ const createCenter = async (req: express.Request, res: express.Response) => {
     const centerData = { ...req.body, code };
     const center = new Center(centerData);
     await center.save();
+
+    // Create registration wallet entry if initial balance > 0
+    if (centerData.walletBalance && centerData.walletBalance > 0) {
+      const registrationEntry = new Wallet({
+        centerId: center._id,
+        centerCode: center.code,
+        centerName: center.name,
+        beneficiary: "Registration",
+        paymentType: "Initial Balance",
+        accountHolderName: "System",
+        amount: centerData.walletBalance,
+        transactionId: `REG-${center.code}-${Date.now()}`,
+        transactionDate: new Date(),
+        paySlip: "system-registration", // Special identifier for registration entries
+        addedOn: new Date(),
+        status: "Approved", // Auto-approved for registration
+      });
+      await registrationEntry.save();
+    }
+
     res.status(201).json({ message: "Center created successfully", center });
   } catch (error: any) {
     console.error("Error creating center:", error);

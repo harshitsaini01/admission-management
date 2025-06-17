@@ -3,13 +3,10 @@ import Wallet from "../models/Wallet";
 import Center from "../models/Center";
 import fs from "fs";
 import path from "path";
-import jwt from "jsonwebtoken";
 import multer from "multer";
 import config from "../config";
 
 const router = express.Router();
-
-const JWT_SECRET = config.JWT_SECRET;
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -40,30 +37,6 @@ const upload = multer({
     }
   },
 });
-
-// Middleware to verify JWT token from cookie
-const authenticateToken = (req: Request, res: Response, next: NextFunction): void => {
-  const token = req.cookies.token;
-  console.log("Received token from cookie:", token);
-
-  if (!token) {
-    res.status(401).json({ message: "Authentication token required" });
-    return;
-  }
-
-  console.log("JWT_SECRET in walletRoutes:", JWT_SECRET);
-
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
-    console.log("Decoded token:", decoded);
-    (req as any).user = decoded;
-    next();
-  } catch (error: any) {
-    console.error("Error verifying token:", error);
-    res.status(403).json({ message: "Invalid or expired token" });
-    return;
-  }
-};
 
 // Middleware to check if user is superadmin
 const isSuperadmin = (req: Request, res: Response, next: NextFunction): void => {
@@ -182,14 +155,20 @@ const updateRechargeStatus = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
-    if (status === "Approved" && rechargeRequest.status !== "Approved") {
-      const center = await Center.findById(rechargeRequest.centerId);
-      if (!center) {
-        res.status(400).json({ message: "Center not found" });
-        return;
-      }
+    const center = await Center.findById(rechargeRequest.centerId);
+    if (!center) {
+      res.status(400).json({ message: "Center not found" });
+      return;
+    }
 
+    // Handle wallet balance changes based on status transitions
+    if (status === "Approved" && rechargeRequest.status !== "Approved") {
+      // Adding amount: only when changing TO approved from non-approved status
       center.walletBalance = (center.walletBalance || 0) + rechargeRequest.amount;
+      await center.save();
+    } else if (status !== "Approved" && rechargeRequest.status === "Approved") {
+      // Removing amount: when changing FROM approved to non-approved status
+      center.walletBalance = Math.max(0, (center.walletBalance || 0) - rechargeRequest.amount);
       await center.save();
     }
 
@@ -203,9 +182,32 @@ const updateRechargeStatus = async (req: Request, res: Response): Promise<void> 
   }
 };
 
+// GET /api/wallet/centers - Fetch all centers for superadmin (for center selection)
+const getAllCenters = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const user = (req as any).user;
+    if (!user) {
+      res.status(401).json({ message: "User not authenticated" });
+      return;
+    }
+
+    if (user.role !== "superadmin") {
+      res.status(403).json({ message: "Only superadmins can access all centers" });
+      return;
+    }
+
+    const centers = await Center.find({}, 'code name university walletBalance').sort({ code: 1 });
+    res.status(200).json(centers);
+  } catch (error: any) {
+    console.error("Error in getAllCenters:", error);
+    res.status(500).json({ message: "Failed to fetch centers", error: error.message });
+  }
+};
+
 // Routes
-router.post("/recharge", authenticateToken, rechargeWallet);
-router.get("/recharge", authenticateToken, getRechargeRequests);
-router.patch("/recharge/:id/status", authenticateToken, isSuperadmin, updateRechargeStatus);
+router.get("/centers", getAllCenters);
+router.post("/recharge", rechargeWallet);
+router.get("/recharge", getRechargeRequests);
+router.patch("/recharge/:id/status", isSuperadmin, updateRechargeStatus);
 
 export default router;

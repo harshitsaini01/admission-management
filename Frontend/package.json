@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@heroicons/react": "^2.2.0",
     "@tailwindcss/vite": "^4.0.6",
     "@types/node": "^22.13.9",
     "file-saver": "^2.0.5",
@@ -20,7 +21,14 @@
     "react-icons": "^5.5.0",
     "react-router-dom": "^7.1.5",
     "save-dev": "^0.0.1-security",
-    "tailwindcss": "^4.0.6"
+    "tailwindcss": "^4.0.6",
+    "recharts": "^2.12.7",
+    "framer-motion": "^11.0.0",
+    "react-hot-toast": "^2.4.1",
+    "date-fns": "^3.6.0",
+    "react-hook-form": "^7.51.0",
+    "@hookform/resolvers": "^3.3.4",
+    "zod": "^3.22.4"
   },
   "devDependencies": {
     "@eslint/js": "^9.19.0",
