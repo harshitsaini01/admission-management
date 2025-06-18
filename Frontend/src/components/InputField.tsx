@@ -48,6 +48,8 @@ const InputField: React.FC<InputFieldProps> = ({
   const isPincodeField = name === 'pincode';
   const isMobileField = name.includes('mobile') || name.includes('Mobile') || name === 'contactNumber';
   const isEmailField = type === 'email';
+  const isDateField = type === 'date';
+  const isTextField = type === 'text';
 
   useEffect(() => {
     setDisplayValue(value);
@@ -55,9 +57,13 @@ const InputField: React.FC<InputFieldProps> = ({
 
   const validateField = (fieldValue: string | number) => {
     const stringValue = String(fieldValue);
+    // Skip validation for text fields
+    if (isTextField) {
+      return "";
+    }
     
     if (isEmailField && stringValue) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
       if (!emailRegex.test(stringValue)) {
         return "Please enter a valid email address";
       }
@@ -65,8 +71,15 @@ const InputField: React.FC<InputFieldProps> = ({
     
     if (isMobileField && stringValue) {
       const mobileRegex = /^[6-9]\d{9}$/;
-      if (!mobileRegex.test(stringValue.replace(/\D/g, ''))) {
+      const digitsOnly = stringValue.replace(/\D/g, '');
+      if (digitsOnly.length === 0) {
+        return "Please enter a mobile number";
+      }
+      if (digitsOnly.length !== 10) {
         return "Please enter a valid 10-digit mobile number";
+      }
+      if (!mobileRegex.test(digitsOnly)) {
+        return "Please enter a valid 10-digit mobile number starting with 6-9";
       }
     }
     
@@ -81,6 +94,13 @@ const InputField: React.FC<InputFieldProps> = ({
       const marks = parseFloat(stringValue);
       if (isNaN(marks) || marks < 0 || marks > 100) {
         return "Please enter valid marks between 0-100";
+      }
+    }
+
+    if (isDateField && stringValue) {
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+      if (!dateRegex.test(stringValue)) {
+        return "Please enter a valid date in YYYY-MM-DD format";
       }
     }
     
@@ -102,11 +122,9 @@ const InputField: React.FC<InputFieldProps> = ({
 
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     setIsFocused(false);
-    
     const currentValue = e.target.value;
     const error = validateField(currentValue);
     setValidationError(error);
-    
     // Restore default values if field is empty
     if (!currentValue) {
       if (isMarksField) {
@@ -118,7 +136,6 @@ const InputField: React.FC<InputFieldProps> = ({
         onChange(syntheticEvent);
       }
     }
-    
     onBlur?.();
   };
 
@@ -126,42 +143,36 @@ const InputField: React.FC<InputFieldProps> = ({
     const newValue = e.target.value;
     setDisplayValue(newValue);
     setIsTouched(true);
-    
     // Clear validation error when user starts typing
     if (validationError) {
       setValidationError("");
     }
-    
     // Format mobile number input
     if (isMobileField && newValue) {
       const digitsOnly = newValue.replace(/\D/g, '');
       if (digitsOnly.length <= 10) {
         const formattedEvent = {
           ...e,
-          target: { ...e.target, value: digitsOnly }
+          target: { ...e.target, name, value: digitsOnly }
         };
         onChange(formattedEvent);
         return;
-      } else {
-        return; // Don't allow more than 10 digits
       }
+      return; // Don't allow more than 10 digits
     }
-    
     // Format pincode input
     if (isPincodeField && newValue) {
       const digitsOnly = newValue.replace(/\D/g, '');
       if (digitsOnly.length <= 6) {
         const formattedEvent = {
           ...e,
-          target: { ...e.target, value: digitsOnly }
+          target: { ...e.target, name, value: digitsOnly }
         };
         onChange(formattedEvent);
         return;
-      } else {
-        return; // Don't allow more than 6 digits
       }
+      return; // Don't allow more than 6 digits
     }
-    
     onChange(e);
   };
 
@@ -169,8 +180,9 @@ const InputField: React.FC<InputFieldProps> = ({
     if (pattern) return pattern;
     if (isMobileField) return "[0-9]{10}";
     if (isPincodeField) return "[0-9]{6}";
-    if (isEmailField) return "[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,}$";
-    return undefined;
+    if (isEmailField) return "[^\\s@]+@[^\\s@]+\\.[^\\s@]+";
+    if (isDateField) return "\\d{4}-\\d{2}-\\d{2}";
+    return undefined; // No pattern for text fields or other types
   };
 
   const getPlaceholder = () => {
@@ -179,6 +191,7 @@ const InputField: React.FC<InputFieldProps> = ({
     if (isPincodeField) return "Enter 6-digit pincode";
     if (isEmailField) return "Enter valid email address";
     if (isMarksField) return "Enter marks";
+    if (isDateField) return "YYYY-MM-DD";
     return "";
   };
 
@@ -233,12 +246,13 @@ const InputField: React.FC<InputFieldProps> = ({
         readOnly={readOnly}
         min={min}
         max={max}
-        pattern={getInputPattern()}
+        pattern={type === "date" ? getInputPattern() : undefined}
         title={
           isMobileField ? "Please enter a valid 10-digit mobile number" :
           isPincodeField ? "Please enter a valid 6-digit pincode" :
           isEmailField ? "Please enter a valid email address" :
           isMarksField ? "Please enter marks between 0-100" :
+          isDateField ? "Please enter a valid date in YYYY-MM-DD format" :
           undefined
         }
       />

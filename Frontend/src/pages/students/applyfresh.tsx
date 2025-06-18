@@ -217,15 +217,127 @@ const Applyfresh: React.FC = () => {
   const validateStep = (step: number): boolean => {
     switch (step) {
       case 1:
-        return !!(formData.university && formData.center && formData.centerName && formData.course && formData.specialization && formData.year && formData.admissionSession);
+        const step1Fields = {
+          university: "University",
+          center: "Center Code",
+          centerName: "Center Name",
+          course: "Course",
+          specialization: "Specialization",
+          year: "Year",
+          admissionSession: "Admission Session"
+        };
+        
+        for (const [field, label] of Object.entries(step1Fields)) {
+          if (!formData[field as keyof typeof formData]) {
+            toast.error(`Please fill in the ${label} field`);
+            return false;
+          }
+        }
+        return true;
+
       case 2:
-        return !!(formData.studentName && formData.fatherName && formData.motherName && formData.gender && formData.dob && formData.email && formData.mobileNumber && formData.debId && formData.apaarAbcId && formData.maritalStatus && formData.employmentType && formData.religion && formData.category);
+        const step2Fields = {
+          studentName: "Student Name",
+          fatherName: "Father's Name",
+          motherName: "Mother's Name",
+          gender: "Gender",
+          dob: "Date of Birth",
+          email: "Email",
+          mobileNumber: "Mobile Number",
+          debId: "DEB ID",
+          apaarAbcId: "APAAR/ABC ID",
+          maritalStatus: "Marital Status",
+          employmentType: "Employment Type",
+          religion: "Religion",
+          category: "Category"
+        };
+        
+        for (const [field, label] of Object.entries(step2Fields)) {
+          const value = formData[field as keyof typeof formData];
+          // Special handling for mobile number
+          if (field === 'mobileNumber') {
+            if (!value) {
+              toast.error('Please enter a mobile number');
+              return false;
+            }
+            const mobileValue = value.toString().trim();
+            if (mobileValue === '') {
+              toast.error('Please enter a mobile number');
+              return false;
+            }
+            const digitsOnly = mobileValue.replace(/\D/g, '');
+            if (digitsOnly.length !== 10) {
+              toast.error('Please enter a valid 10-digit mobile number');
+              return false;
+            }
+            const mobileRegex = /^[6-9]\d{9}$/;
+            if (!mobileRegex.test(digitsOnly)) {
+              toast.error('Please enter a valid 10-digit mobile number starting with 6-9');
+              return false;
+            }
+            continue;
+          }
+          // For all other fields
+          if (!value || (typeof value === 'string' && value.trim() === '')) {
+            toast.error(`Please fill in the ${label} field`);
+            return false;
+          }
+        }
+        return true;
+
       case 3:
-        return !!(formData.address && formData.pincode && formData.postOffice && formData.district && formData.state);
+        const step3Fields = {
+          address: "Address",
+          pincode: "Pincode",
+          postOffice: "Post Office",
+          district: "District",
+          state: "State"
+        };
+        
+        for (const [field, label] of Object.entries(step3Fields)) {
+          if (!formData[field as keyof typeof formData]) {
+            toast.error(`Please fill in the ${label} field`);
+            return false;
+          }
+        }
+        return true;
+
       case 4:
-        return !!(formData.highSchoolSubject && formData.highSchoolYear && formData.highSchoolBoard && formData.intermediateSubject && formData.intermediateYear && formData.intermediateBoard);
+        const step4Fields = {
+          highSchoolSubject: "High School Subject",
+          highSchoolYear: "High School Year",
+          highSchoolBoard: "High School Board",
+          intermediateSubject: "Intermediate Subject",
+          intermediateYear: "Intermediate Year",
+          intermediateBoard: "Intermediate Board"
+        };
+        
+        for (const [field, label] of Object.entries(step4Fields)) {
+          if (!formData[field as keyof typeof formData]) {
+            toast.error(`Please fill in the ${label} field`);
+            return false;
+          }
+        }
+        return true;
+
       case 5:
-        return !!(files.photo && files.studentSignature && files.addressIdProof && files.abcDebScreenshot && files.highSchoolMarksheet && files.intermediateMarksheet);
+        const step5Fields = {
+          photo: "Photo",
+          studentSignature: "Student Signature",
+          addressIdProof: "Address ID Proof",
+          abcDebScreenshot: "ABC/DEB Screenshot",
+          highSchoolMarksheet: "High School Marksheet",
+          intermediateMarksheet: "Intermediate Marksheet"
+        };
+        
+        for (const [field, label] of Object.entries(step5Fields)) {
+          if (!files[field as keyof typeof files]) {
+            toast.error(`Please upload the ${label}`);
+            return false;
+          }
+        }
+        return true;
+
       default:
         return true;
     }
@@ -235,8 +347,6 @@ const Applyfresh: React.FC = () => {
     if (validateStep(currentStep)) {
       setCurrentStep(prev => Math.min(prev + 1, steps.length));
       toast.success('Step completed successfully!');
-    } else {
-      toast.error('Please fill in all required fields before proceeding.');
     }
   };
 
@@ -431,8 +541,24 @@ const Applyfresh: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <InputField label="Course" name="course" value={formData.course} onChange={handleChange} placeholder="Course" required />
-              <InputField label="Specialization" name="specialization" value={formData.specialization} onChange={handleChange} placeholder="Specialization" required />
+              <InputField 
+                label="Course" 
+                name="course" 
+                value={formData.course} 
+                onChange={handleChange} 
+                type="text"
+                placeholder="Course" 
+                required 
+              />
+              <InputField 
+                label="Specialization" 
+                name="specialization" 
+                value={formData.specialization} 
+                onChange={handleChange} 
+                type="text"
+                placeholder="Specialization" 
+                required 
+              />
               <InputField
                 label="Year"
                 name="year"
