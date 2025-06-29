@@ -8,6 +8,19 @@ import config from "../config";
 
 const router = express.Router();
 
+// Helper function to get the correct protocol
+const getBaseUrl = (req: Request): string => {
+  // Check if the request is forwarded from HTTPS
+  const isHttps = req.headers['x-forwarded-proto'] === 'https' || 
+                  req.headers['x-forwarded-ssl'] === 'on' ||
+                  req.secure;
+  
+  const protocol = isHttps ? 'https' : req.protocol;
+  const host = req.get('host') || req.get('x-forwarded-host') || 'localhost';
+  
+  return `${protocol}://${host}`;
+};
+
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {

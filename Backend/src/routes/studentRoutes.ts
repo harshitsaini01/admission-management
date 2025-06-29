@@ -1,6 +1,3 @@
-
-
-
 // students.ts
 import express, { Request, Response, RequestHandler, NextFunction } from "express";
 import multer from "multer";
@@ -19,6 +16,19 @@ if (!fs.existsSync(uploadDir)) {
 }
 
 router.use("/uploads", express.static(uploadDir));
+
+// Helper function to get the correct protocol
+const getBaseUrl = (req: Request): string => {
+  // Check if the request is forwarded from HTTPS
+  const isHttps = req.headers['x-forwarded-proto'] === 'https' || 
+                  req.headers['x-forwarded-ssl'] === 'on' ||
+                  req.secure;
+  
+  const protocol = isHttps ? 'https' : req.protocol;
+  const host = req.get('host') || req.get('x-forwarded-host') || 'localhost';
+  
+  return `${protocol}://${host}`;
+};
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadDir),
@@ -110,7 +120,7 @@ const getStudents: RequestHandler = async (req, res) => {
       students = await Student.find({ centerId: user.centerId });
     }
 
-    const baseUrl = `${req.protocol}://${req.get("host")}`;
+    const baseUrl = getBaseUrl(req);
     const studentsWithFullPaths = students.map((student) => ({
       ...student.toJSON(),
       photo: student.photo ? `${baseUrl}/uploads/${student.photo}` : "",
@@ -147,7 +157,7 @@ const updateStudent: RequestHandler = async (req, res) => {
       return;
     }
 
-    const baseUrl = `${req.protocol}://${req.get("host")}`;
+    const baseUrl = getBaseUrl(req);
     const updatedStudent = {
       ...student.toJSON(),
       photo: student.photo ? `${baseUrl}/uploads/${student.photo}` : "",
@@ -250,7 +260,7 @@ const createStudent: RequestHandler = async (req, res) => {
     const student = new Student(studentData);
     await student.save();
 
-    const baseUrl = `${req.protocol}://${req.get("host")}`;
+    const baseUrl = getBaseUrl(req);
     const studentWithFullPaths = {
       ...student.toJSON(),
       photo: student.photo ? `${baseUrl}/uploads/${student.photo}` : "",
@@ -332,7 +342,7 @@ const reuploadDocuments: RequestHandler = async (req, res) => {
       return;
     }
 
-    const baseUrl = `${req.protocol}://${req.get("host")}`;
+    const baseUrl = getBaseUrl(req);
     const studentWithFullPaths = {
       ...updatedStudent.toJSON(),
       photo: updatedStudent.photo ? `${baseUrl}/uploads/${updatedStudent.photo}` : "",

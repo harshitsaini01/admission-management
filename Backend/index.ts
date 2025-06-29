@@ -27,6 +27,9 @@ const isProduction = NODE_ENV === "production";
 
 const app = express();
 
+// Trust proxy to get correct protocol when behind Nginx
+app.set('trust proxy', 1);
+
 // Configure CORS to allow requests from the frontend domain
 app.use(
   cors({
